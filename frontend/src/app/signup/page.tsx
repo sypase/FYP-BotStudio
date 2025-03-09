@@ -67,24 +67,26 @@ export default function Signup() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 flex flex-col items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 flex flex-col items-center justify-center p-8 space-y-12">
       <div className="mb-8 transition-all duration-500 ease-in-out transform hover:scale-105">
-        <h1 className="text-4xl font-bold text-indigo-700">Botstudio</h1>
+        <span className="text-3xl font-bold bg-gradient-to-r from-purple-200 to-purple-500 bg-clip-text text-transparent">
+          BotStudio
+        </span>
       </div>
 
-      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transition-all duration-500 ease-in-out transform hover:shadow-3xl">
+      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transition-all duration-500 ease-in-out transform hover:shadow-3xl space-y-8">
         {formStep === 1 && (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-300 ease-in-out space-y-4">
             <h2 className="text-2xl font-semibold mb-6 text-gray-800">Get Started</h2>
             <input
-              className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
+              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
               placeholder="Enter your email"
               type="email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
             <button
-              className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out mb-4"
+              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out mb-4"
               onClick={sendVerificationCode}
               disabled={loading}
             >
@@ -94,17 +96,17 @@ export default function Signup() {
         )}
 
         {formStep === 2 && (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-300 ease-in-out space-y-4">
             <h2 className="text-2xl font-semibold mb-6 text-gray-800">Your Details</h2>
             <input
-              className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
+              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
               placeholder="Full Name"
               type="text"
               onChange={(e) => setName(e.target.value)}
               value={name}
             />
             <button 
-              className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
+              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
               onClick={() => setFormStep(3)}
             >
               Next
@@ -113,17 +115,17 @@ export default function Signup() {
         )}
 
         {formStep === 3 && (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-300 ease-in-out space-y-4">
             <h2 className="text-2xl font-semibold mb-6 text-gray-800">Set Password</h2>
             <input
-              className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
+              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
               placeholder="Password"
               type="password"
               onChange={(e) => setPassword(e.target.value)}
               value={password}
             />
             <button 
-              className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
+              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
               onClick={() => setFormStep(4)}
             >
               Next
@@ -132,17 +134,17 @@ export default function Signup() {
         )}
 
         {formStep === 4 && (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-300 ease-in-out space-y-4">
             <h2 className="text-2xl font-semibold mb-6 text-gray-800">Verify Email</h2>
             <input
-              className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
+              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
               placeholder="Verification Code"
               type="text"
               onChange={(e) => setVerificationCode(e.target.value)}
               value={verificationCode}
             />
             <button 
-              className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
+              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
               onClick={verifyEmail}
             >
               Create Account
@@ -161,4 +163,3 @@ export default function Signup() {
     </main>
   );
 }
-

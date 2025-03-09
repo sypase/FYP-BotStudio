@@ -1,25 +1,29 @@
-import './globals.css'
-import { appName } from '@/utils/utils'
-import { Golos_Text } from 'next/font/google'
+import type React from "react"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
 
-const golos = Golos_Text({
-  weight: '400',
-  subsets: ['latin'],
-})
+const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = { 
-  title: appName,
-  description: 'Bot Studio',
+export const metadata: Metadata = {
+  title: "BotStudio - AI Automation Platform",
+  description: "Create custom AI bots for your website or personal use at an affordable price.",
 }
 
 export default function RootLayout({
-  children, 
-}: {
+  children,
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en" data-theme="light">
-      <body className={golos.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
+
