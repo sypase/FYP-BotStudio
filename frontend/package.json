@@ -26,6 +26,7 @@
     "buffer": "^6.0.3",
     "chart.js": "^4.4.2",
     "class-variance-authority": "^0.7.1",
+    "date-fns": "^4.1.0",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.12",
     "framer-motion": "^11.18.1",

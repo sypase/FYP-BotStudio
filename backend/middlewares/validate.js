@@ -8,6 +8,8 @@ const validate = async (req, res, next) => {
   if (token == null) return res.status(401).send("Unauthorized");
 
   jwt.verify(token, process.env.TOKEN_SECRET, async (err, user) => {
+    console.log(user);
+    
     if (err) return res.status(401).send("Unauthorized");
     const userData = await User.findOne({ _id: user }).lean();
     if (!userData) {

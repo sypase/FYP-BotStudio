@@ -7,8 +7,8 @@ export default function DashboardPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button className="gap-2 text-black">
+          <Plus className="h-4 w-4 text-black" />
           Create New Bot
         </Button>
       </div>

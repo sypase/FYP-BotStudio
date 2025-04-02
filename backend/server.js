@@ -4,6 +4,7 @@ import express from "express";
 import mongoose from "mongoose";
 import test from "./routes/test.js"
 import users from "./routes/users.js"
+import scrape from "./routes/scrape.js"
 
 
 dotenv.config();
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use("/test", test);
 app.use("/users", users);
+app.use("/scrape", scrape);
 
 
 

@@ -69,7 +69,7 @@ export default function BotsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold">My Bots</h1>
         <Button className="gap-2">
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 text-black" />
           Create New Bot
         </Button>
       </div>

@@ -4,11 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  Bot,
-  Home,
-  LogOut,
-} from "lucide-react";
+import { Bot, Home, LogOut, AudioWaveform } from "lucide-react";
+
 // Removed the useTheme import and the Sun/Moon icons
 import { Button } from "@/components/ui/button";
 import {
@@ -24,11 +21,13 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
-import { serverURL } from '@/utils/utils';
+import { serverURL } from "@/utils/utils";
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -49,7 +48,11 @@ export default function AppSidebar() {
         setUser(response.data.user);
       } catch (error) {
         console.error("Failed to fetch user data", error);
-        if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
+        if (
+          axios.isAxiosError(error) &&
+          error.response &&
+          error.response.status === 401
+        ) {
           localStorage.removeItem("token");
           router.push("/login");
         }
@@ -75,6 +78,11 @@ export default function AppSidebar() {
       href: "/bots",
       icon: Bot,
     },
+    {
+      title: "Scrapper",
+      href: "/scraper",
+      icon: AudioWaveform,
+    },
   ];
 
   const isActive = (href: string) => {
@@ -87,7 +95,9 @@ export default function AppSidebar() {
 
   return (
     <>
-      <Sidebar className="dark"> {/* Apply dark styles */}
+      <Sidebar className="dark">
+        {" "}
+        {/* Apply dark styles */}
         <SidebarHeader className="border-b">
           <div className="flex items-center px-2 py-3">
             <Link href="/" className="flex items-center gap-2">
@@ -98,7 +108,6 @@ export default function AppSidebar() {
             </Link>
           </div>
         </SidebarHeader>
-
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>Main</SidebarGroupLabel>
@@ -122,19 +131,27 @@ export default function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-
         <SidebarFooter className="border-t p-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-100"> {/* Use text-gray-100 for dark theme */}
+              <span className="text-sm font-medium text-gray-100">
+                {" "}
+                {/* Use text-gray-100 for dark theme */}
                 Hello, {user.name}
               </span>
-              <span className="text-sm text-gray-400"> {/* Use text-gray-400 for dark theme */}
+              <span className="text-sm text-gray-400">
+                {" "}
+                {/* Use text-gray-400 for dark theme */}
                 {user.email}
               </span>
             </div>
             {/* Removed the theme switch button */}
-            <Button variant="outline" size="sm" className="justify-start gap-2" onClick={handleLogout}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="justify-start gap-2"
+              onClick={handleLogout}
+            >
               <LogOut className="h-5 w-5" />
               <span>Log Out</span>
             </Button>
