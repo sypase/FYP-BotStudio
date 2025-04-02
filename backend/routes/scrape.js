@@ -2,7 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import Scrape from '../models/Scrape.js';
 import { validate } from '../middlewares/validate.js';
 import pkg from 'uuid';
@@ -93,26 +93,42 @@ async function generateQAPairs(content) {
     }
 }
 
-async function saveToS3(qaPairs) {
-    const uniqueId = uuidv4();
-    const filename = `qa_pairs_${uniqueId}.json`;
+async function saveToS3(qaPairs, filename = null) {
+    const uniqueId = filename ? filename.split('_')[2].split('.')[0] : uuidv4();
+    const newFilename = filename || `qa_pairs_${uniqueId}.json`;
     const jsonContent = JSON.stringify(qaPairs, null, 2);
     
     const params = {
         Bucket: process.env.CLOUDFLARE_BUCKET_NAME, 
-        Key: filename,
+        Key: newFilename,
         Body: jsonContent,
         ContentType: 'application/json',
     };
     
     try {
         await s3Client.send(new PutObjectCommand(params));
-        const fileUrl = `${process.env.CLOUDFLARE_S3_PUBLIC_URL || process.env.CLOUDFLARE_S3_ENDPOINT}/${process.env.CLOUDFLARE_BUCKET_NAME}/${filename}`;
-        console.log(`QA pairs saved to Cloudflare R2 with filename: ${filename}`);
-        return { fileUrl, filename };
+        const fileUrl = `${process.env.CLOUDFLARE_S3_PUBLIC_URL || process.env.CLOUDFLARE_S3_ENDPOINT}/${process.env.CLOUDFLARE_BUCKET_NAME}/${newFilename}`;
+        console.log(`QA pairs saved to Cloudflare R2 with filename: ${newFilename}`);
+        return { fileUrl, filename: newFilename };
     } catch (error) {
         console.error('Error uploading to Cloudflare R2:', error);
         throw new Error('Error uploading to Cloudflare R2');
+    }
+}
+
+async function deleteFromS3(filename) {
+    const params = {
+        Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+        Key: filename,
+    };
+
+    try {
+        await s3Client.send(new DeleteObjectCommand(params));
+        console.log(`File ${filename} deleted from S3`);
+        return true;
+    } catch (error) {
+        console.error('Error deleting file from S3:', error);
+        throw new Error('Error deleting file from S3');
     }
 }
 
@@ -121,7 +137,7 @@ router.get('/history', validate, async (req, res) => {
     try {
         const scrapes = await Scrape.find()
             .sort({ createdAt: -1 })
-            .select('_id url createdAt s3FileUrl');
+            .select('_id url createdAt s3FileUrl s3FileName');
         
         res.json({
             message: 'Scrape history retrieved successfully',
@@ -154,6 +170,7 @@ router.get('/:id', validate, async (req, res) => {
                 url: scrape.url,
                 createdAt: scrape.createdAt,
                 s3FileUrl: scrape.s3FileUrl,
+                s3FileName: scrape.s3FileName,
                 qaPairs: scrape.qaPairs
             }
         });
@@ -166,18 +183,128 @@ router.get('/:id', validate, async (req, res) => {
     }
 });
 
-// GET Route to fetch all scrapes (original route)
-router.get('/', validate, async (req, res) => {
+// PUT Route to update a scrape's Q&A pairs
+router.put('/:id', validate, async (req, res) => {
     try {
-        const scrapes = await Scrape.find();
+        const { qaPairs } = req.body;
+        
+        if (!qaPairs || !Array.isArray(qaPairs)) {
+            return res.status(400).json({ 
+                message: 'QA pairs array is required' 
+            });
+        }
+
+        const scrape = await Scrape.findById(req.params.id);
+        if (!scrape) {
+            return res.status(404).json({ 
+                message: 'Scrape not found' 
+            });
+        }
+
+        // Update the S3 file
+        const { fileUrl } = await saveToS3(qaPairs, scrape.s3FileName);
+
+        // Update the database record
+        scrape.qaPairs = qaPairs;
+        scrape.s3FileUrl = fileUrl;
+        await scrape.save();
+
         res.json({
-            message: 'All scrapes retrieved successfully',
-            data: scrapes
+            message: 'Scrape updated successfully',
+            data: {
+                _id: scrape._id,
+                url: scrape.url,
+                createdAt: scrape.createdAt,
+                updatedAt: scrape.updatedAt,
+                s3FileUrl: scrape.s3FileUrl,
+                qaPairs: scrape.qaPairs
+            }
         });
     } catch (error) {
-        console.error('Error fetching scrapes:', error);
+        console.error('Error updating scrape:', error);
         res.status(500).json({ 
-            message: 'Error fetching scrapes', 
+            message: 'Error updating scrape', 
+            error: error.message 
+        });
+    }
+});
+
+// PATCH Route to add new Q&A pairs to an existing scrape
+router.patch('/:id', validate, async (req, res) => {
+    try {
+        const { qaPairs } = req.body;
+        
+        if (!qaPairs || !Array.isArray(qaPairs)) {
+            return res.status(400).json({ 
+                message: 'QA pairs array is required' 
+            });
+        }
+
+        const scrape = await Scrape.findById(req.params.id);
+        if (!scrape) {
+            return res.status(404).json({ 
+                message: 'Scrape not found' 
+            });
+        }
+
+        // Merge new Q&A pairs with existing ones
+        const updatedQAPairs = [...scrape.qaPairs, ...qaPairs];
+
+        // Update the S3 file
+        const { fileUrl } = await saveToS3(updatedQAPairs, scrape.s3FileName);
+
+        // Update the database record
+        scrape.qaPairs = updatedQAPairs;
+        scrape.s3FileUrl = fileUrl;
+        await scrape.save();
+
+        res.json({
+            message: 'Q&A pairs added successfully',
+            data: {
+                _id: scrape._id,
+                url: scrape.url,
+                createdAt: scrape.createdAt,
+                updatedAt: scrape.updatedAt,
+                s3FileUrl: scrape.s3FileUrl,
+                qaPairs: scrape.qaPairs
+            }
+        });
+    } catch (error) {
+        console.error('Error adding Q&A pairs:', error);
+        res.status(500).json({ 
+            message: 'Error adding Q&A pairs', 
+            error: error.message 
+        });
+    }
+});
+
+// DELETE Route to delete a scrape
+router.delete('/:id', validate, async (req, res) => {
+    try {
+        const scrape = await Scrape.findById(req.params.id);
+        if (!scrape) {
+            return res.status(404).json({ 
+                message: 'Scrape not found' 
+            });
+        }
+
+        // Delete from S3
+        await deleteFromS3(scrape.s3FileName);
+
+        // Delete from database
+        await Scrape.findByIdAndDelete(req.params.id);
+
+        res.json({
+            message: 'Scrape deleted successfully',
+            data: {
+                _id: scrape._id,
+                url: scrape.url
+            }
+        });
+    } catch (error) {
+        console.error('Error deleting scrape:', error);
+        res.status(500).json({ 
+            message: 'Error deleting scrape', 
             error: error.message 
         });
     }
@@ -200,18 +327,17 @@ router.post('/', validate, async (req, res) => {
         // Save to S3 and get the URL
         const { fileUrl, filename } = await saveToS3(qaPairs);
 
-        console.log(fileUrl, filename);
-        
-        
         // Create and save the scrape record with S3 URL
         const scrape = new Scrape({ 
             url, 
             content, 
             qaPairs,
-            s3FileUrl: fileUrl,
-            s3FileName: filename
+            s3FileName: filename,
+            s3FileUrl: fileUrl
         });
         await scrape.save();
+
+        console.log('Scrape saved to database:', scrape);
         
         res.status(201).json({ 
             message: 'Scrape completed successfully',
