@@ -53,7 +53,7 @@ async function extractSiteContent(url) {
 
 async function generateQAPairs(content) {
     try {
-        const questionPrompt = `Generate simple questions based on the following content. Return only the questions without numbering, each on a new line:\n\n${content}`;
+        const questionPrompt = `Based on the following content, generate at least 50 simple and relevant questions. Ensure the questions are clear, concise, and cover a wide range of topics from the content. Return only the questions, each on a new line without numbering:\n\n${content}`;
         
         // Use GitHub's inference endpoint for question generation
         const questionResponse = await githubOpenai.chat.completions.create({
@@ -200,18 +200,24 @@ router.post('/', validate, async (req, res) => {
         // Save to S3 and get the URL
         const { fileUrl, filename } = await saveToS3(qaPairs);
 
-        console.log(fileUrl, filename);
+        console.log("**************");
         
+
+        console.log(fileUrl, filename);
+        console.log("**************");
+
         
         // Create and save the scrape record with S3 URL
         const scrape = new Scrape({ 
             url, 
             content, 
             qaPairs,
-            s3FileUrl: fileUrl,
             s3FileName: filename
         });
         await scrape.save();
+
+        console.log('Scrape saved to database:', scrape);
+        
         
         res.status(201).json({ 
             message: 'Scrape completed successfully',
