@@ -1,0 +1,15 @@
+./backend/.env
+# Add more files or directories to ignore
+./frontend/.env
+/node_modules
+/.next
+./backend/node_modules
+./backend/dist
+./frontend/node_modules
+./frontend/.next
+/.env
+/.env.local
+/.env.development
+/.env.production
+/.env.test
+/.env.development.local
