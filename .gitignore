@@ -13,3 +13,4 @@
 /.env.production
 /.env.test
 /.env.development.local
+./frontend/.next
