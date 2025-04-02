@@ -14,9 +14,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { Download, Globe, AlertCircle, Loader2, FileJson, Copy, History } from 'lucide-react'
+import { Download, Globe, AlertCircle, Loader2, FileJson, Copy, History, Trash2, Edit, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 interface QAPair {
   question: string
@@ -42,27 +52,68 @@ interface ScrapeHistoryItem {
   url: string
   createdAt: string
   s3FileUrl: string
+  s3FileName: string
 }
 
-const CustomAccordion: React.FC<{ qaPairs: QAPair[] }> = ({ qaPairs }) => {
+const CustomAccordion: React.FC<{ 
+  qaPairs: QAPair[]
+  onEditPair: (index: number, pair: QAPair) => void
+  onDeletePair: (index: number) => void
+}> = ({ qaPairs, onEditPair, onDeletePair }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editedPair, setEditedPair] = useState<QAPair>({ question: '', answer: '' })
 
   const toggleAccordion = (index: number) => {
     setActiveIndex(prevIndex => (prevIndex === index ? null : index))
+  }
+
+  const startEditing = (index: number) => {
+    setEditingIndex(index)
+    setEditedPair(qaPairs[index])
+  }
+
+  const saveEdit = () => {
+    if (editingIndex !== null) {
+      onEditPair(editingIndex, editedPair)
+      setEditingIndex(null)
+    }
   }
 
   return (
     <div>
       {qaPairs.map((pair, index) => (
         <div key={index} className="border-b border-gray-200">
-          <button className="w-full text-left flex items-center justify-between p-4" onClick={() => toggleAccordion(index)}>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="mr-2">
-                Q{index + 1}
-              </Badge>
-              {pair.question}
+          <div className="w-full flex items-center justify-between p-4">
+            <button 
+              className="flex-1 text-left flex items-center justify-between"
+              onClick={() => toggleAccordion(index)}
+            >
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="mr-2">
+                  Q{index + 1}
+                </Badge>
+                {pair.question}
+              </div>
+            </button>
+            <div className="flex gap-2 ml-4">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => startEditing(index)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => onDeletePair(index)}
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
             </div>
-          </button>
+          </div>
+          
           {activeIndex === index && (
             <div className="p-4 bg-gray-50 text-black">
               <p>{pair.answer}</p>
@@ -70,7 +121,106 @@ const CustomAccordion: React.FC<{ qaPairs: QAPair[] }> = ({ qaPairs }) => {
           )}
         </div>
       ))}
+
+      {/* Edit Dialog */}
+      <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Q&A Pair</DialogTitle>
+            <DialogDescription>
+              Make changes to this question and answer pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="question" className="text-right">
+                Question
+              </Label>
+              <Textarea
+                id="question"
+                value={editedPair.question}
+                onChange={(e) => setEditedPair({...editedPair, question: e.target.value})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="answer" className="text-right">
+                Answer
+              </Label>
+              <Textarea
+                id="answer"
+                value={editedPair.answer}
+                onChange={(e) => setEditedPair({...editedPair, answer: e.target.value})}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={saveEdit}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  )
+}
+
+const AddQAPairDialog: React.FC<{
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddPair: (pair: QAPair) => void
+}> = ({ open, onOpenChange, onAddPair }) => {
+  const [newPair, setNewPair] = useState<QAPair>({ question: '', answer: '' })
+
+  const handleAdd = () => {
+    if (newPair.question.trim() && newPair.answer.trim()) {
+      onAddPair(newPair)
+      setNewPair({ question: '', answer: '' })
+      onOpenChange(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Q&A Pair</DialogTitle>
+          <DialogDescription>
+            Create a new question and answer pair for this scrape.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="new-question" className="text-right">
+              Question
+            </Label>
+            <Textarea
+              id="new-question"
+              value={newPair.question}
+              onChange={(e) => setNewPair({...newPair, question: e.target.value})}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="new-answer" className="text-right">
+              Answer
+            </Label>
+            <Textarea
+              id="new-answer"
+              value={newPair.answer}
+              onChange={(e) => setNewPair({...newPair, answer: e.target.value})}
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={handleAdd}>
+            Add Pair
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -84,9 +234,11 @@ const ScraperPage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null)
   const [history, setHistory] = useState<ScrapeHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState<boolean>(false)
+  const [currentScrapeId, setCurrentScrapeId] = useState<string | null>(null)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   useEffect(() => {
-    // Safely get token from localStorage
     if (typeof window !== 'undefined') {
       setToken(localStorage.getItem('token'))
     }
@@ -124,6 +276,7 @@ const ScraperPage: React.FC = () => {
       const scrape = response.data.data
       setQaPairs(scrape.qaPairs)
       setFileUrl(scrape.s3FileUrl)
+      setCurrentScrapeId(scrape._id)
       setActiveTab('results')
       toast.success(`Loaded scrape from ${scrape.url}`)
     } catch (error) {
@@ -131,6 +284,86 @@ const ScraperPage: React.FC = () => {
       toast.error('Failed to load scrape')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const updateScrape = async (updatedPairs: QAPair[]) => {
+    if (!token || !currentScrapeId) return
+    
+    try {
+      setLoading(true)
+      const response = await axios.put(
+        `${serverURL}/scrape/${currentScrapeId}`,
+        { qaPairs: updatedPairs },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      
+      setQaPairs(updatedPairs)
+      setFileUrl(response.data.data.s3FileUrl)
+      toast.success('Scrape updated successfully')
+      fetchHistory() // Refresh history
+    } catch (error) {
+      console.error('Error updating scrape:', error)
+      toast.error('Failed to update scrape')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addQAPairs = async (newPairs: QAPair[]) => {
+    if (!token || !currentScrapeId) return
+    
+    try {
+      setLoading(true)
+      const response = await axios.patch(
+        `${serverURL}/scrape/${currentScrapeId}`,
+        { qaPairs: newPairs },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      
+      setQaPairs(response.data.data.qaPairs)
+      setFileUrl(response.data.data.s3FileUrl)
+      toast.success('Q&A pairs added successfully')
+      fetchHistory() // Refresh history
+    } catch (error) {
+      console.error('Error adding Q&A pairs:', error)
+      toast.error('Failed to add Q&A pairs')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteScrape = async () => {
+    if (!token || !currentScrapeId) return
+    
+    try {
+      setLoading(true)
+      await axios.delete(`${serverURL}/scrape/${currentScrapeId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      
+      setQaPairs([])
+      setFileUrl(null)
+      setCurrentScrapeId(null)
+      setActiveTab('form')
+      toast.success('Scrape deleted successfully')
+      fetchHistory() // Refresh history
+    } catch (error) {
+      console.error('Error deleting scrape:', error)
+      toast.error('Failed to delete scrape')
+    } finally {
+      setLoading(false)
+      setDeleteConfirmOpen(false)
     }
   }
 
@@ -169,6 +402,7 @@ const ScraperPage: React.FC = () => {
           if (response.data?.data?.scrape?.qaPairs) {
             setQaPairs(response.data.data.scrape.qaPairs)
             setFileUrl(response.data.data.fileUrl || response.data.data.scrape.s3FileUrl)
+            setCurrentScrapeId(response.data.data.scrape._id)
             setActiveTab('results')
             fetchHistory() // Refresh history after new scrape
             return `Generated ${response.data.data.scrape.qaPairs.length} Q&A pairs`
@@ -209,6 +443,22 @@ const ScraperPage: React.FC = () => {
         console.error('Failed to copy: ', err)
         toast.error('Failed to copy Q&A pairs to clipboard')
       })
+  }
+
+  const handleEditPair = (index: number, updatedPair: QAPair) => {
+    const updatedPairs = [...qaPairs]
+    updatedPairs[index] = updatedPair
+    updateScrape(updatedPairs)
+  }
+
+  const handleDeletePair = (index: number) => {
+    const updatedPairs = [...qaPairs]
+    updatedPairs.splice(index, 1)
+    updateScrape(updatedPairs)
+  }
+
+  const handleAddPair = (newPair: QAPair) => {
+    addQAPairs([newPair])
   }
 
   return (
@@ -301,12 +551,20 @@ const ScraperPage: React.FC = () => {
                 </CardTitle>
                 <CardDescription>Your Q&A pairs have been saved and are ready for download</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex gap-2">
                 <Button asChild variant="outline" className="gap-2">
                   <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                     <Download className="h-4 w-4" />
                     Download JSON File
                   </a>
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Scrape
                 </Button>
               </CardContent>
             </Card>
@@ -315,15 +573,31 @@ const ScraperPage: React.FC = () => {
           {qaPairs.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Generated Q&A Pairs</CardTitle>
-                <CardDescription >
-                  {qaPairs.length} question-answer pairs generated from {url}
-                </CardDescription>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Generated Q&A Pairs</CardTitle>
+                    <CardDescription>
+                      {qaPairs.length} question-answer pairs generated from {url}
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setAddDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Pair
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <CustomAccordion qaPairs={qaPairs} />
+                <CustomAccordion 
+                  qaPairs={qaPairs} 
+                  onEditPair={handleEditPair}
+                  onDeletePair={handleDeletePair}
+                />
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => copyToClipboard(JSON.stringify(qaPairs, null, 2))}
@@ -406,6 +680,37 @@ const ScraperPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Q&A Pair Dialog */}
+      <AddQAPairDialog 
+        open={addDialogOpen} 
+        onOpenChange={setAddDialogOpen} 
+        onAddPair={handleAddPair}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the scrape and all its Q&A pairs.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={deleteScrape} disabled={loading}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete Scrape"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
