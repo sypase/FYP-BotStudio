@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { serverURL } from '@/utils/utils'
 import {
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { Download, Globe, AlertCircle, Loader2, FileJson, Copy, History, Trash2, Edit, Plus, FileUp } from 'lucide-react'
+import { Download, Globe, AlertCircle, Loader2, FileJson, Copy, History, Trash2, Edit, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import {
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { useDropzone } from 'react-dropzone'
 
 interface QAPair {
   question: string
@@ -54,7 +53,6 @@ interface ScrapeHistoryItem {
   createdAt: string
   s3FileUrl: string
   s3FileName: string
-  sourceType: string
 }
 
 const CustomAccordion: React.FC<{ 
@@ -226,86 +224,12 @@ const AddQAPairDialog: React.FC<{
   )
 }
 
-const CSVUploader: React.FC<{
-  onUpload: (file: File) => void
-  loading: boolean
-}> = ({ onUpload, loading }) => {
-  const [fileError, setFileError] = useState<string | null>(null)
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFileError(null)
-    const file = acceptedFiles[0]
-    
-    if (!file) {
-      setFileError('No file selected')
-      return
-    }
-
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      setFileError('Only CSV files are allowed')
-      return
-    }
-
-    onUpload(file)
-  }, [onUpload])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'text/csv': ['.csv']
-    },
-    maxFiles: 1
-  })
-
-  return (
-    <div className="space-y-4">
-      <div 
-        {...getRootProps()} 
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-gray-400'
-        }`}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center justify-center gap-2">
-          <FileUp className="h-8 w-8 text-gray-500" />
-          {isDragActive ? (
-            <p className="font-medium">Drop the CSV file here...</p>
-          ) : (
-            <>
-              <p className="font-medium">Drag & drop a CSV file here, or click to select</p>
-              <p className="text-sm text-muted-foreground">
-                CSV should contain 'question' and 'answer' columns
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {fileError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{fileError}</AlertDescription>
-        </Alert>
-      )}
-
-      {loading && (
-        <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Processing CSV file...</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
 const ScraperPage: React.FC = () => {
   const [url, setUrl] = useState('')
   const [qaPairs, setQaPairs] = useState<QAPair[]>([])
   const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
-  const [csvLoading, setCsvLoading] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState('form')
   const [token, setToken] = useState<string | null>(null)
   const [history, setHistory] = useState<ScrapeHistoryItem[]>([])
@@ -313,7 +237,6 @@ const ScraperPage: React.FC = () => {
   const [currentScrapeId, setCurrentScrapeId] = useState<string | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [activeFormTab, setActiveFormTab] = useState('website') // 'website' or 'csv'
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -355,7 +278,7 @@ const ScraperPage: React.FC = () => {
       setFileUrl(scrape.s3FileUrl)
       setCurrentScrapeId(scrape._id)
       setActiveTab('results')
-      toast.success(`Loaded scrape from ${scrape.url || 'CSV upload'}`)
+      toast.success(`Loaded scrape from ${scrape.url}`)
     } catch (error) {
       console.error('Error loading scrape:', error)
       toast.error('Failed to load scrape')
@@ -441,43 +364,6 @@ const ScraperPage: React.FC = () => {
     } finally {
       setLoading(false)
       setDeleteConfirmOpen(false)
-    }
-  }
-
-  const handleCSVUpload = async (file: File) => {
-    if (!token) {
-      setError('No authentication token found. Please log in.')
-      return
-    }
-
-    setCsvLoading(true)
-    setError(null)
-
-    try {
-      const formData = new FormData()
-      formData.append('qaFile', file)
-
-      const response = await axios.post(`${serverURL}/scrape/upload-csv`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-
-      const scrape = response.data.data.scrape
-      setQaPairs(scrape.qaPairs)
-      setFileUrl(scrape.s3FileUrl)
-      setCurrentScrapeId(scrape._id)
-      setActiveTab('results')
-      fetchHistory()
-      toast.success('CSV uploaded and processed successfully')
-    } catch (error: any) {
-      console.error('Error uploading CSV:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Error processing CSV file'
-      setError(errorMessage)
-      toast.error(errorMessage)
-    } finally {
-      setCsvLoading(false)
     }
   }
 
@@ -579,12 +465,12 @@ const ScraperPage: React.FC = () => {
     <div className="p-6">
       <div className="flex flex-col space-y-2 mb-6">
         <h1 className="text-3xl font-bold">Website Scraper</h1>
-        <p className="text-muted-foreground">Extract content from websites or upload CSV to generate Q&A pairs</p>
+        <p className="text-muted-foreground">Extract content from websites and generate Q&A pairs using AI</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="form">Create New</TabsTrigger>
+          <TabsTrigger value="form">Scrape Website</TabsTrigger>
           <TabsTrigger value="results" disabled={qaPairs.length === 0}>
             Results {qaPairs.length > 0 && `(${qaPairs.length})`}
           </TabsTrigger>
@@ -599,70 +485,41 @@ const ScraperPage: React.FC = () => {
         <TabsContent value="form" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Create New Q&A Pairs</CardTitle>
-              <CardDescription>Choose how you want to create Q&A pairs</CardDescription>
+              <CardTitle>Website Scraper</CardTitle>
+              <CardDescription>Enter a website URL to scrape content and generate Q&A pairs</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs 
-                value={activeFormTab} 
-                onValueChange={setActiveFormTab}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="website">From Website</TabsTrigger>
-                  <TabsTrigger value="csv">From CSV</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="website" className="pt-4">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <label htmlFor="url" className="text-sm font-medium">
-                        Website URL
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            type="url"
-                            id="url"
-                            placeholder="https://example.com"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            className="pl-9"
-                            required
-                          />
-                        </div>
-                        <Button type="submit" disabled={loading}>
-                          {loading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Scraping...
-                            </>
-                          ) : (
-                            "Scrape Website"
-                          )}
-                        </Button>
-                      </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="url" className="text-sm font-medium">
+                    Website URL
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="url"
+                        id="url"
+                        placeholder="https://example.com"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        className="pl-9"
+                        required
+                      />
                     </div>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="csv" className="pt-4">
-                  <CSVUploader 
-                    onUpload={handleCSVUpload} 
-                    loading={csvLoading}
-                  />
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    <p>CSV file must contain columns named "question" and "answer".</p>
-                    <p>Example format:</p>
-                    <pre className="bg-gray-100 text-black p-2 rounded mt-2">
-                      question,answer<br />
-                      "What is your return policy?","30 days"<br />
-                      "How do I contact support?","Email support@example.com"
-                    </pre>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Scraping...
+                        </>
+                      ) : (
+                        "Scrape Website"
+                      )}
+                    </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </form>
 
               {error && (
                 <Alert variant="destructive" className="mt-4">
@@ -672,7 +529,7 @@ const ScraperPage: React.FC = () => {
                 </Alert>
               )}
 
-              {(loading || csvLoading) && (
+              {loading && (
                 <div className="space-y-3 mt-6">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-full" />
@@ -720,7 +577,7 @@ const ScraperPage: React.FC = () => {
                   <div>
                     <CardTitle>Generated Q&A Pairs</CardTitle>
                     <CardDescription>
-                      {qaPairs.length} question-answer pairs generated
+                      {qaPairs.length} question-answer pairs generated from {url}
                     </CardDescription>
                   </div>
                   <Button 
@@ -762,7 +619,7 @@ const ScraperPage: React.FC = () => {
                 Scrape History
               </CardTitle>
               <CardDescription>
-                View your previous website scrapes and CSV uploads
+                View your previous website scrapes and their results
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -789,14 +646,7 @@ const ScraperPage: React.FC = () => {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">
-                                {item.url || 'CSV Upload'}
-                              </p>
-                              <Badge variant="secondary">
-                                {item.sourceType === 'csv_upload' ? 'CSV' : 'Website'}
-                              </Badge>
-                            </div>
+                            <p className="font-medium">{item.url}</p>
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(item.createdAt), 'MMM dd, yyyy HH:mm')}
                             </p>
