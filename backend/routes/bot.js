@@ -7,10 +7,11 @@ import {
   fineTune,
   getFineTuneJob,
   convertToJSONL,
+  interactWithBot,
 } from "../utils/openai.js";
 import { getS3FileContent } from "../utils/s3Helper.js";
-import fs from 'fs';
-import { promisify } from 'util';
+import fs from "fs";
+import { promisify } from "util";
 
 const router = express.Router();
 
@@ -70,7 +71,6 @@ router.post("/create", validate, async (req, res) => {
 
     console.log("Fine-tuning job started with ID:", jobId);
     console.log("File ID for fine-tuning:", fileId);
-    
 
     // Create bot record
     const bot = await createBotRecord({
@@ -292,6 +292,98 @@ router.get("/public", async (req, res) => {
   }
 });
 
+/**
+ * @route POST /api/bot/interact/:id
+ * @desc Interact with a trained bot with system context
+ * @access Private (or Public if bot isPublic)
+ */
+router.post("/interact/:id", validate, async (req, res) => {
+  const { id } = req.params;
+  const { message } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot ID is required",
+    });
+  }
+
+  if (!message || typeof message !== "string" || message.trim() === "") {
+    return res.status(400).json({
+      success: false,
+      message: "Valid message is required",
+    });
+  }
+
+  try {
+    // Find the bot with access control
+    const bot = await Bot.findOne({
+      _id: id,
+      ...(req.user?._id
+        ? { $or: [{ owner: req.user._id }, { isPublic: true }] }
+        : { isPublic: true }),
+    }).select("name botModelId trainingStatus isPublic owner");
+
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found or you don't have access",
+      });
+    }
+
+    // Verify bot is ready for interaction
+    if (bot.trainingStatus !== "completed") {
+      return res.status(423).json({
+        // 423 Locked status code
+        success: false,
+        message: `Bot training in progress. Current status: ${bot.trainingStatus}`,
+        status: bot.trainingStatus,
+      });
+    }
+
+    // Interact with the bot using standardized system message
+    const response = await interactWithBot(
+      bot.botModelId,
+      message,
+      bot.name // Company name for system message
+    );
+
+    // Format response
+    const result = {
+      botId: bot._id,
+      botName: bot.name,
+      isPublic: bot.isPublic,
+      response: response.choices[0]?.message?.content || "No response from bot",
+      usage: {
+        promptTokens: response.usage?.prompt_tokens,
+        completionTokens: response.usage?.completion_tokens,
+        totalTokens: response.usage?.total_tokens,
+      },
+    };
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error(`Bot interaction error [${id}]:`, error);
+
+    // Handle specific OpenAI API errors
+    const statusCode =
+      error.statusCode || (error.message.includes("rate limit") ? 429 : 500);
+
+    res.status(statusCode).json({
+      success: false,
+      message: error.message.includes("model")
+        ? "This bot is currently unavailable. Please try again later."
+        : error.message || "Failed to interact with bot",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+
+
 // Helper functions
 async function validateAndGetScrape(scrapeId, userId) {
   const scrape = await Scrape.findOne({
@@ -337,8 +429,7 @@ async function startFineTuningProcess(jsonlData, model) {
     // Upload the file to OpenAI
     console.log("Uploading file to OpenAI for fine-tuning...");
     console.log(jsonlData);
-    
-    
+
     const fileResponse = await uploadFile(jsonlData);
 
     if (!fileResponse?.id) {

@@ -116,3 +116,40 @@ export function convertToJSONL(data, companyName = "Your Company") {
     throw new Error(`Failed to convert to JSONL: ${error.message}`);
   }
 }
+
+/**
+ * Interacts with a fine-tuned bot model
+ * @param {string} modelId - The fine-tuned model ID
+ * @param {string} message - User's message
+ * @param {string} companyName - Name for system message context
+ * @returns {Promise<Object>} OpenAI chat completion response
+ * @throws {Error} If interaction fails
+ */
+export async function interactWithBot(modelId, message, companyName = "Your Company") {
+  try {
+    const systemMessage = `You are an AI assistant representing ${companyName}. Provide accurate, professional responses.`;
+    
+    const response = await openai.chat.completions.create({
+      model: modelId,
+      messages: [
+        {
+          role: "system",
+          content: systemMessage
+        },
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0
+    });
+    return response;
+  } catch (error) {
+    console.error("OpenAI interaction error:", error);
+    throw new Error(`Failed to interact with bot: ${error.message}`);
+  }
+}
