@@ -9,6 +9,8 @@ import {
   convertToJSONL,
 } from "../utils/openai.js";
 import { getS3FileContent } from "../utils/s3Helper.js";
+import fs from 'fs';
+import { promisify } from 'util';
 
 const router = express.Router();
 
@@ -43,7 +45,7 @@ router.get("/", validate, async (req, res) => {
  * @access Private
  */
 router.post("/create", validate, async (req, res) => {
-  const { scrapeId, name, botModel = "gpt-3.5-turbo" } = req.body;
+  const { scrapeId, name, botModel = "gpt-4o-mini-2024-07-18" } = req.body;
 
   if (!scrapeId) {
     return res.status(400).json({
@@ -65,6 +67,10 @@ router.post("/create", validate, async (req, res) => {
 
     // Upload to OpenAI and start fine-tuning
     const { fileId, jobId } = await startFineTuningProcess(jsonlData, botModel);
+
+    console.log("Fine-tuning job started with ID:", jobId);
+    console.log("File ID for fine-tuning:", fileId);
+    
 
     // Create bot record
     const bot = await createBotRecord({
@@ -150,6 +156,142 @@ router.post("/finetunestatus", validate, async (req, res) => {
   }
 });
 
+// Route to delete a bot
+router.delete("/delete/:id", validate, async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot ID is required",
+    });
+  }
+
+  try {
+    const bot = await Bot.findOneAndDelete({
+      _id: id,
+      owner: req.user._id,
+    });
+
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Bot deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete bot error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete bot",
+      error: error.message,
+    });
+  }
+});
+// Route to update bot's public status
+router.patch("/update/:id", validate, async (req, res) => {
+  const { id } = req.params;
+  const { isPublic } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot ID is required",
+    });
+  }
+
+  try {
+    const bot = await Bot.findOneAndUpdate(
+      { _id: id, owner: req.user._id },
+      { isPublic },
+      { new: true }
+    );
+
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Bot updated successfully",
+      data: bot,
+    });
+  } catch (error) {
+    console.error("Update bot error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update bot",
+      error: error.message,
+    });
+  }
+});
+// Route to get a bot by ID
+router.get("/:id", validate, async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot ID is required",
+    });
+  }
+
+  try {
+    const bot = await Bot.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
+
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Bot retrieved successfully",
+      data: bot,
+    });
+  } catch (error) {
+    console.error("Get bot error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve bot",
+      error: error.message,
+    });
+  }
+});
+// Route to get all public bots
+router.get("/public", async (req, res) => {
+  try {
+    const bots = await Bot.find({ isPublic: true })
+      .sort({ createdAt: -1 })
+      .select("name botModelId trainingStatus isPublic createdAt");
+
+    res.json({
+      success: true,
+      data: bots,
+    });
+  } catch (error) {
+    console.error("Get public bots error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve public bots",
+      error: error.message,
+    });
+  }
+});
+
 // Helper functions
 async function validateAndGetScrape(scrapeId, userId) {
   const scrape = await Scrape.findOne({
@@ -191,27 +333,28 @@ async function getAndProcessTrainingData(fileName) {
 }
 
 async function startFineTuningProcess(jsonlData, model) {
-  console.log("Starting fine-tuning process...");
-  console.log("Model:", model);
-  console.log("JSONL Data:", jsonlData);
-
   try {
-    const fileResponse = await uploadFile(
-      new Blob([jsonlData], { type: "application/jsonl" })
-    );
+    // Upload the file to OpenAI
+    console.log("Uploading file to OpenAI for fine-tuning...");
+    console.log(jsonlData);
+    
+    
+    const fileResponse = await uploadFile(jsonlData);
 
     if (!fileResponse?.id) {
-      throw new Error("OpenAI file upload failed");
+      throw new Error("OpenAI file upload failed - no file ID returned");
     }
-    console.log("File uploaded successfully:", fileResponse.id);
 
-    const fineTuneResponse = "hello";
+    console.log("File uploaded successfully with ID:", fileResponse.id);
 
-    // const fineTuneResponse = await fineTune(model, fileResponse.id);
+    // Start fine-tuning job
+    const fineTuneResponse = await fineTune(model, fileResponse.id);
 
-    // if (!fineTuneResponse?.id) {
-    //   throw new Error("Fine-tuning job creation failed");
-    // }
+    if (!fineTuneResponse?.id) {
+      throw new Error("Fine-tuning job creation failed - no job ID returned");
+    }
+
+    console.log("Fine-tuning job created with ID:", fineTuneResponse.id);
 
     return {
       fileId: fileResponse.id,
