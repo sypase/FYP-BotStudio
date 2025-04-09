@@ -1,6 +1,16 @@
 import mongoose from "mongoose";
 
 const scrapeSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   url: { type: String, required: false }, // URL is optional
   content: [String],
   qaPairs: [{ question: String, answer: String }],
