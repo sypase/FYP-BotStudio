@@ -184,12 +184,14 @@ async function deleteFromS3(filename) {
   }
 }
 
-// GET Route to fetch all scrapes (history)
+// GET Route to fetch all scrapes for the authenticated user
 router.get("/history", validate, async (req, res) => {
   try {
-    const scrapes = await Scrape.find()
+    const scrapes = await Scrape.find({ ownerId: req.user._id })
       .sort({ createdAt: -1 })
-      .select("_id url createdAt s3FileUrl s3FileName sourceType");
+      .select("_id name url createdAt s3FileUrl s3FileName sourceType");
+
+    console.log(scrapes);
 
     res.json({
       message: "Scrape history retrieved successfully",
@@ -207,7 +209,10 @@ router.get("/history", validate, async (req, res) => {
 // GET Route to fetch a specific scrape by ID with all Q&A pairs
 router.get("/:id", validate, async (req, res) => {
   try {
-    const scrape = await Scrape.findById(req.params.id);
+    const scrape = await Scrape.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
 
     if (!scrape) {
       return res.status(404).json({
@@ -219,6 +224,7 @@ router.get("/:id", validate, async (req, res) => {
       message: "Scrape retrieved successfully",
       data: {
         _id: scrape._id,
+        name: scrape.name,
         url: scrape.url,
         createdAt: scrape.createdAt,
         s3FileUrl: scrape.s3FileUrl,
@@ -239,7 +245,7 @@ router.get("/:id", validate, async (req, res) => {
 // PUT Route to update a scrape's Q&A pairs
 router.put("/:id", validate, async (req, res) => {
   try {
-    const { qaPairs } = req.body;
+    const { qaPairs, name } = req.body;
 
     if (!qaPairs || !Array.isArray(qaPairs)) {
       return res.status(400).json({
@@ -247,7 +253,11 @@ router.put("/:id", validate, async (req, res) => {
       });
     }
 
-    const scrape = await Scrape.findById(req.params.id);
+    const scrape = await Scrape.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
+
     if (!scrape) {
       return res.status(404).json({
         message: "Scrape not found",
@@ -260,12 +270,16 @@ router.put("/:id", validate, async (req, res) => {
     // Update the database record
     scrape.qaPairs = qaPairs;
     scrape.s3FileUrl = fileUrl;
+    if (name) scrape.name = name;
+    // update the ownerid
+    scrape.ownerId = req.user._id;
     await scrape.save();
 
     res.json({
       message: "Scrape updated successfully",
       data: {
         _id: scrape._id,
+        name: scrape.name,
         url: scrape.url,
         createdAt: scrape.createdAt,
         updatedAt: scrape.updatedAt,
@@ -286,7 +300,7 @@ router.put("/:id", validate, async (req, res) => {
 // PATCH Route to add new Q&A pairs to an existing scrape
 router.patch("/:id", validate, async (req, res) => {
   try {
-    const { qaPairs } = req.body;
+    const { qaPairs, name } = req.body;
 
     if (!qaPairs || !Array.isArray(qaPairs)) {
       return res.status(400).json({
@@ -294,7 +308,11 @@ router.patch("/:id", validate, async (req, res) => {
       });
     }
 
-    const scrape = await Scrape.findById(req.params.id);
+    const scrape = await Scrape.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
+
     if (!scrape) {
       return res.status(404).json({
         message: "Scrape not found",
@@ -310,12 +328,14 @@ router.patch("/:id", validate, async (req, res) => {
     // Update the database record
     scrape.qaPairs = updatedQAPairs;
     scrape.s3FileUrl = fileUrl;
+    if (name) scrape.name = name;
     await scrape.save();
 
     res.json({
       message: "Q&A pairs added successfully",
       data: {
         _id: scrape._id,
+        name: scrape.name,
         url: scrape.url,
         createdAt: scrape.createdAt,
         updatedAt: scrape.updatedAt,
@@ -336,7 +356,11 @@ router.patch("/:id", validate, async (req, res) => {
 // DELETE Route to delete a scrape
 router.delete("/:id", validate, async (req, res) => {
   try {
-    const scrape = await Scrape.findById(req.params.id);
+    const scrape = await Scrape.findOneAndDelete({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
+
     if (!scrape) {
       return res.status(404).json({
         message: "Scrape not found",
@@ -346,13 +370,11 @@ router.delete("/:id", validate, async (req, res) => {
     // Delete from S3
     await deleteFromS3(scrape.s3FileName);
 
-    // Delete from database
-    await Scrape.findByIdAndDelete(req.params.id);
-
     res.json({
       message: "Scrape deleted successfully",
       data: {
         _id: scrape._id,
+        name: scrape.name,
         url: scrape.url,
         sourceType: scrape.sourceType,
       },
@@ -370,7 +392,7 @@ router.delete("/:id", validate, async (req, res) => {
 router.post("/", validate, async (req, res) => {
   console.log("Scraping website:", req.body.url);
 
-  const { url } = req.body;
+  const { url, name } = req.body;
   if (!url) return res.status(400).json({ message: "URL is required" });
 
   try {
@@ -386,6 +408,8 @@ router.post("/", validate, async (req, res) => {
 
     // Create and save the scrape record with S3 URL
     const scrape = new Scrape({
+      name: name || `Scrape ${new Date().toLocaleDateString()}`,
+      ownerId: req.user._id,
       url,
       content,
       qaPairs,
@@ -402,6 +426,7 @@ router.post("/", validate, async (req, res) => {
       data: {
         scrape: {
           _id: scrape._id,
+          name: scrape.name,
           url: scrape.url,
           createdAt: scrape.createdAt,
           s3FileUrl: scrape.s3FileUrl,
@@ -434,7 +459,8 @@ router.post(
       }
 
       console.log("Received CSV file:", req.file.originalname);
-      
+
+      const { name } = req.body;
 
       // Check file extension is .csv
       const fileExtension = req.file.originalname
@@ -499,31 +525,34 @@ router.post(
 
       console.log("Uploaded to S3:", fileUrl);
       console.log("S3 filename:", filename);
+
       // Check if the file was uploaded successfully
       if (!fileUrl) {
         return res.status(500).json({
           message: "Error uploading file to S3",
         });
       }
-      
 
       // Create and save the scrape record with S3 URL
       const scrape = new Scrape({
+        name: name || `CSV Upload ${new Date().toLocaleDateString()}`,
+        ownerId: req.user._id, // Add this if your model requires it
         qaPairs,
         s3FileName: filename,
         s3FileUrl: fileUrl,
         sourceType: "csv_upload",
       });
+
       await scrape.save();
 
       console.log("Scrape saved to database:", scrape);
-      
 
       res.status(201).json({
         message: "CSV uploaded and processed successfully",
         data: {
           scrape: {
             _id: scrape._id,
+            name: scrape.name,
             createdAt: scrape.createdAt,
             s3FileUrl: scrape.s3FileUrl,
             sourceType: scrape.sourceType,
@@ -544,6 +573,8 @@ router.post(
       } else if (error.message.includes("No valid Q&A pairs found")) {
         errorMessage =
           "CSV file must contain at least one valid question and answer pair";
+      } else if (error.message.includes("ownerId")) {
+        errorMessage = "Authentication error - please log in again";
       }
 
       res.status(400).json({
@@ -553,5 +584,4 @@ router.post(
     }
   }
 );
-
 export default router;
