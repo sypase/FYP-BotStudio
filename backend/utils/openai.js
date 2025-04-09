@@ -1,20 +1,40 @@
 import OpenAI from "openai";
-import { Blob } from "node:buffer";
+import fs from 'fs';
+import { Blob } from 'buffer';
+import { Readable } from 'stream';
+import { promisify } from 'util';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * Uploads a file to OpenAI for fine-tuning
- * @param {Blob} file - The file to upload
+ * @param {string|Blob} fileContent - The file content as string or Blob
  * @returns {Promise<Object>} OpenAI file response
  * @throws {Error} If file upload fails
  */
-export async function uploadFile(file) {
+export async function uploadFile(fileContent) {
   try {
+    // Create a temporary file
+    const tempFilePath = `./temp_${Date.now()}.jsonl`;
+    
+    if (typeof fileContent === 'string') {
+      fs.writeFileSync(tempFilePath, fileContent);
+    } else if (fileContent instanceof Blob) {
+      const arrayBuffer = await fileContent.arrayBuffer();
+      fs.writeFileSync(tempFilePath, Buffer.from(arrayBuffer));
+    } else {
+      throw new Error('Invalid file format - must be string or Blob');
+    }
+
+    // Upload using fs.createReadStream
     const response = await openai.files.create({
-      file,
+      file: fs.createReadStream(tempFilePath),
       purpose: "fine-tune",
     });
+
+    // Clean up temporary file
+    fs.unlinkSync(tempFilePath);
+
     return response;
   } catch (error) {
     console.error("OpenAI file upload error:", error);
@@ -33,7 +53,11 @@ export async function fineTune(model, trainingFileId) {
   try {
     const response = await openai.fineTuning.jobs.create({
       training_file: trainingFileId,
-      model,
+      model: model,
+      hyperparameters: {
+        n_epochs: 1,
+        batch_size: 1
+      }
     });
     return response;
   } catch (error) {
