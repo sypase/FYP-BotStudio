@@ -11,26 +11,23 @@ const BotSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  // Reference to LLM provider instead of storing API key directly
-  llmProvider: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "LLMProvider",
-    required: true,
-  },
   botModelId: {
     type: String,
     required: true,
     default: "gpt-4",
   },
-  trainingData: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Scrape",
-    },
-  ],
-  systemPrompt: {
+  trainingStatus: {
     type: String,
-    default: "You are a helpful assistant.",
+    enum: ["pending", "completed", "failed"],
+    default: "pending",
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+  },
+  fileId: {
+    type: String,
+    default: null,
   },
   createdAt: {
     type: Date,
