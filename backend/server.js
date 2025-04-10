@@ -2,10 +2,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
-import test from "./routes/test.js"
-import users from "./routes/users.js"
-import scrape from "./routes/scrape.js"
-
+import test from "./routes/test.js";
+import users from "./routes/users.js";
+import scrape from "./routes/scrape.js";
+import datas from "./routes/data.js";
+import bot from "./routes/bot.js";
 
 dotenv.config();
 
@@ -13,14 +14,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
 app.use("/test", test);
 app.use("/users", users);
 app.use("/scrape", scrape);
-
-
-
-
+app.use("/data", datas);
+app.use("/bot", bot);
 
 app.get("/", (req, res) => {
   res.send("BotSTUDIO API Is running");

@@ -83,6 +83,26 @@ export default function AppSidebar() {
       href: "/scraper",
       icon: AudioWaveform,
     },
+    {
+      title: "Chat",
+      href: "/scraper",
+      icon: AudioWaveform,
+    },
+    {
+      title: "Shop",
+      href: "/scraper",
+      icon: AudioWaveform,
+    },
+    {
+      title: "Marketplace",
+      href: "/scraper",
+      icon: AudioWaveform,
+    },
+    {
+      title: "Settings",
+      href: "/settings",
+      icon: AudioWaveform,
+    },
   ];
 
   const isActive = (href: string) => {

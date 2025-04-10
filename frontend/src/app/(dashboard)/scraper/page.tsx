@@ -39,10 +39,12 @@ interface ScrapeResponse {
   data: {
     scrape: {
       _id: string
+      name: string
       url: string
       qaPairs: QAPair[]
       s3FileUrl: string
       createdAt: string
+      sourceType: string
     }
     fileUrl: string
   }
@@ -50,7 +52,8 @@ interface ScrapeResponse {
 
 interface ScrapeHistoryItem {
   _id: string
-  url: string
+  name: string
+  url?: string
   createdAt: string
   s3FileUrl: string
   s3FileName: string
@@ -227,10 +230,11 @@ const AddQAPairDialog: React.FC<{
 }
 
 const CSVUploader: React.FC<{
-  onUpload: (file: File) => void
+  onUpload: (file: File, name?: string) => void
   loading: boolean
 }> = ({ onUpload, loading }) => {
   const [fileError, setFileError] = useState<string | null>(null)
+  const [name, setName] = useState('')
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFileError(null)
@@ -246,8 +250,8 @@ const CSVUploader: React.FC<{
       return
     }
 
-    onUpload(file)
-  }, [onUpload])
+    onUpload(file, name)
+  }, [onUpload, name])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -259,6 +263,16 @@ const CSVUploader: React.FC<{
 
   return (
     <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="scrape-name">Scrape Name (Optional)</Label>
+        <Input
+          id="scrape-name"
+          placeholder="My CSV Upload"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+
       <div 
         {...getRootProps()} 
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -301,6 +315,7 @@ const CSVUploader: React.FC<{
 
 const ScraperPage: React.FC = () => {
   const [url, setUrl] = useState('')
+  const [name, setName] = useState('')
   const [qaPairs, setQaPairs] = useState<QAPair[]>([])
   const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -355,7 +370,7 @@ const ScraperPage: React.FC = () => {
       setFileUrl(scrape.s3FileUrl)
       setCurrentScrapeId(scrape._id)
       setActiveTab('results')
-      toast.success(`Loaded scrape from ${scrape.url || 'CSV upload'}`)
+      toast.success(`Loaded scrape: ${scrape.name}`)
     } catch (error) {
       console.error('Error loading scrape:', error)
       toast.error('Failed to load scrape')
@@ -364,14 +379,17 @@ const ScraperPage: React.FC = () => {
     }
   }
 
-  const updateScrape = async (updatedPairs: QAPair[]) => {
+  const updateScrape = async (updatedPairs: QAPair[], updatedName?: string) => {
     if (!token || !currentScrapeId) return
     
     try {
       setLoading(true)
       const response = await axios.put(
         `${serverURL}/scrape/${currentScrapeId}`,
-        { qaPairs: updatedPairs },
+        { 
+          qaPairs: updatedPairs,
+          ...(updatedName && { name: updatedName })
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -444,7 +462,7 @@ const ScraperPage: React.FC = () => {
     }
   }
 
-  const handleCSVUpload = async (file: File) => {
+  const handleCSVUpload = async (file: File, name?: string) => {
     if (!token) {
       setError('No authentication token found. Please log in.')
       return
@@ -456,6 +474,9 @@ const ScraperPage: React.FC = () => {
     try {
       const formData = new FormData()
       formData.append('qaFile', file)
+      if (name) {
+        formData.append('name', name)
+      }
 
       const response = await axios.post(`${serverURL}/scrape/upload-csv`, formData, {
         headers: {
@@ -501,7 +522,7 @@ const ScraperPage: React.FC = () => {
     try {
       const scrapePromise = axios.post<ScrapeResponse>(
         `${serverURL}/scrape`,
-        { url },
+        { url, name: name || undefined },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -616,9 +637,16 @@ const ScraperPage: React.FC = () => {
                 <TabsContent value="website" className="pt-4">
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <label htmlFor="url" className="text-sm font-medium">
-                        Website URL
-                      </label>
+                      <Label htmlFor="scrape-name">Scrape Name (Optional)</Label>
+                      <Input
+                        id="scrape-name"
+                        placeholder="My Website Scrape"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="url">Website URL</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -685,29 +713,46 @@ const ScraperPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="results" className="space-y-4">
-          {fileUrl && (
+          {currentScrapeId && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileJson className="mr-2 h-5 w-5" />
-                  Saved QA Pairs
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {fileUrl?.includes('csv') ? (
+                      <FileUp className="mr-2 h-5 w-5" />
+                    ) : (
+                      <Globe className="mr-2 h-5 w-5" />
+                    )}
+                    <Input
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value)
+                        updateScrape(qaPairs, e.target.value)
+                      }}
+                      className="text-lg font-bold border-none shadow-none focus-visible:ring-1"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </CardTitle>
-                <CardDescription>Your Q&A pairs have been saved and are ready for download</CardDescription>
+                <CardDescription>
+                  {fileUrl?.includes('csv') ? 'CSV Upload' : url}
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex gap-2">
                 <Button asChild variant="outline" className="gap-2">
-                  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={fileUrl || '#'} target="_blank" rel="noopener noreferrer">
                     <Download className="h-4 w-4" />
                     Download JSON File
                   </a>
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  className="gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Scrape
                 </Button>
               </CardContent>
             </Card>
@@ -791,7 +836,7 @@ const ScraperPage: React.FC = () => {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-medium">
-                                {item.url || 'CSV Upload'}
+                                {item.name || item.url || 'CSV Upload'}
                               </p>
                               <Badge variant="secondary">
                                 {item.sourceType === 'csv_upload' ? 'CSV' : 'Website'}
