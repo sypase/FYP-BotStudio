@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Bot, Send, ArrowLeft, RefreshCw, Info, Clock, MoreHorizontal } from "lucide-react"
+import { Bot, Send, ArrowLeft, RefreshCw, Info, Clock, MoreHorizontal, CreditCard, BarChart3, AlertCircle, Settings, Loader2, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TextareaAutosize from "react-textarea-autosize"
 import { useToast } from "@/hooks/use-toast"
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { serverURL } from "@/utils/utils"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface Message {
   id: string
@@ -31,6 +32,7 @@ interface BotInfo {
   description?: string
   trainingStatus: string
   isPublic: boolean
+  isActive: boolean
 }
 
 export default function BotChatPage() {
@@ -40,9 +42,12 @@ export default function BotChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [botInfo, setBotInfo] = useState<BotInfo | null>(null)
   const [isFetchingBot, setIsFetchingBot] = useState(true)
+  const [userCredits, setUserCredits] = useState<number | null>(null)
+  const [showInsufficientCreditsDialog, setShowInsufficientCreditsDialog] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const router = useRouter()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Typing effect for bot messages
   useEffect(() => {
@@ -93,6 +98,15 @@ export default function BotChatPage() {
         const data = await response.json()
         setBotInfo(data.data)
 
+        // Check if bot is active
+        if (!data.data.isActive) {
+          toast({
+            title: "Bot Inactive",
+            description: "This bot is currently inactive. Please activate it in the settings.",
+            variant: "destructive",
+          })
+        }
+
         // Add welcome message with typing effect
         setMessages([
           {
@@ -105,9 +119,10 @@ export default function BotChatPage() {
           },
         ])
       } catch (error) {
+        console.error("Error fetching bot:", error)
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load bot information",
+          description: "Failed to load bot information",
           variant: "destructive",
         })
       } finally {
@@ -125,8 +140,58 @@ export default function BotChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Fetch user credits
+  useEffect(() => {
+    const fetchUserCredits = async () => {
+      try {
+        const response = await fetch(`${serverURL}/users`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user information")
+        }
+
+        const data = await response.json()
+        setUserCredits(data.user.credits)
+      } catch (error) {
+        console.error("Error fetching user credits:", error)
+      }
+    }
+
+    fetchUserCredits()
+  }, [])
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
+
+    // Check if user has enough credits
+    if (userCredits !== null && userCredits < 1) {
+      setShowInsufficientCreditsDialog(true)
+      return
+    }
+
+    // Check if bot is active
+    if (!botInfo?.isActive) {
+      toast({
+        title: "Bot Inactive",
+        description: "This bot is currently inactive. Please activate it in the settings.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if bot is ready
+    if (botInfo.trainingStatus !== "completed") {
+      toast({
+        title: "Bot Not Ready",
+        description: `Bot training in progress. Current status: ${botInfo.trainingStatus}`,
+        variant: "destructive",
+      })
+      return
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -162,6 +227,11 @@ export default function BotChatPage() {
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to get response from bot")
+      }
+
+      // Update user credits
+      if (data.userCredits !== undefined) {
+        setUserCredits(data.userCredits)
       }
 
       // Replace loading message with actual response with typing effect
@@ -215,6 +285,10 @@ export default function BotChatPage() {
     }
   }
 
+  const handleAddCredits = () => {
+    router.push('/credits')
+  }
+
   if (isFetchingBot) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -258,142 +332,215 @@ export default function BotChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black">
+    <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-black/80 backdrop-blur-sm p-4 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/bots")}
-              className="rounded-full hover:bg-gray-900 text-gray-400 hover:text-gray-100"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 blur-sm opacity-70"></div>
-                <Avatar className="relative h-10 w-10 bg-gradient-to-br from-violet-500 to-purple-600 border-2 border-black">
-                  <AvatarFallback className="text-white">
-                    <Bot className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-100">{botInfo.name}</h1>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs font-normal border-gray-700 text-gray-400">
-                    {botInfo.isPublic ? "Public" : "Private"}
-                  </Badge>
-                  {botInfo.trainingStatus === "completed" ? (
-                    <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white text-xs border-0">
-                      Active
-                    </Badge>
-                  ) : (
+      <div className="flex items-center justify-between p-4 border-b dark:border-gray-800">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="dark:hover:bg-gray-800"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>
+                <Bot className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-lg font-semibold">{botInfo?.name || "Loading..."}</h1>
+              <div className="flex items-center gap-2">
+                {botInfo && (
+                  <>
                     <Badge
-                      variant="outline"
-                      className="text-xs font-normal flex items-center gap-1 border-amber-900 text-amber-500"
+                      variant={botInfo.isActive ? "default" : "secondary"}
+                      className={cn(
+                        "text-xs",
+                        botInfo.isActive ? "bg-green-500 hover:bg-green-600" : "bg-gray-500 hover:bg-gray-600"
+                      )}
                     >
-                      <Clock className="h-3 w-3" />
-                      {botInfo.trainingStatus}
+                      {botInfo.isActive ? "Active" : "Inactive"}
                     </Badge>
-                  )}
-                </div>
+                    <Badge
+                      variant={botInfo.trainingStatus === "completed" ? "default" : "secondary"}
+                      className={cn(
+                        "text-xs",
+                        botInfo.trainingStatus === "completed"
+                          ? "bg-blue-500 hover:bg-blue-600"
+                          : botInfo.trainingStatus === "pending"
+                          ? "bg-yellow-500 hover:bg-yellow-600"
+                          : "bg-red-500 hover:bg-red-600"
+                      )}
+                    >
+                      {botInfo.trainingStatus === "completed"
+                        ? "Ready"
+                        : botInfo.trainingStatus === "pending"
+                        ? "Training"
+                        : "Failed"}
+                    </Badge>
+                  </>
+                )}
               </div>
             </div>
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-900">
-                <MoreHorizontal className="h-5 w-5 text-gray-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800 text-gray-200">
-              <DropdownMenuItem className="hover:bg-gray-800 focus:bg-gray-800">Clear chat</DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-800 focus:bg-gray-800">Bot settings</DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-800 focus:bg-gray-800">Share conversation</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/bots/${id}/analytics`)}
+            className="dark:hover:bg-gray-800"
+          >
+            <BarChart3 className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/bots/${id}/settings`)}
+            className="dark:hover:bg-gray-800"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Status Banner */}
+      {botInfo && (!botInfo.isActive || botInfo.trainingStatus !== "completed") && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/20 p-4">
+          <div className="flex items-center gap-2 text-yellow-500">
+            <AlertCircle className="h-5 w-5" />
+            <p className="text-sm">
+              {!botInfo.isActive
+                ? "This bot is currently inactive. Please activate it in the settings to start chatting."
+                : botInfo.trainingStatus === "pending"
+                ? "Bot training is in progress. You can chat once training is complete."
+                : "Bot training has failed. Please check the settings for more information."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-black">
-        <div className="max-w-4xl mx-auto space-y-6 py-4">
-          {messages.map((message) => (
-            <div key={message.id} className={cn("flex", message.sender === "user" ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "max-w-[80%] rounded-2xl px-5 py-3.5 shadow-sm",
-                  message.sender === "user"
-                    ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white"
-                    : "bg-gray-900 text-gray-100 border border-gray-800",
-                )}
-              >
-                {message.isLoading ? (
-                  <div className="flex items-center justify-center h-8 w-16">
-                    <div className="flex space-x-1.5">
-                      <div className="h-2.5 w-2.5 bg-gray-700 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                      <div className="h-2.5 w-2.5 bg-gray-700 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                      <div className="h-2.5 w-2.5 bg-gray-700 rounded-full animate-bounce"></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="whitespace-pre-wrap leading-relaxed">
-                    {message.isTyping ? message.displayedContent : message.content}
-                    {message.isTyping && (
-                      <span className="inline-block w-1 h-4 ml-0.5 bg-gray-400 animate-pulse"></span>
-                    )}
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "text-xs mt-2 flex justify-end",
-                    message.sender === "user" ? "text-violet-200" : "text-gray-500",
-                  )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+            {!botInfo?.isActive ? (
+              <>
+                <AlertCircle className="h-12 w-12 mb-4 text-yellow-500" />
+                <h3 className="text-lg font-semibold mb-2">Bot is Inactive</h3>
+                <p className="max-w-md">
+                  This bot is currently inactive. Please activate it in the settings to start chatting.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => router.push(`/bots/${id}/settings`)}
                 >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Go to Settings
+                </Button>
+              </>
+            ) : botInfo?.trainingStatus !== "completed" ? (
+              <>
+                <Loader2 className="h-12 w-12 mb-4 animate-spin text-primary" />
+                <h3 className="text-lg font-semibold mb-2">Bot is Training</h3>
+                <p className="max-w-md">
+                  This bot is still being trained. Please wait until training is complete before chatting.
+                </p>
+              </>
+            ) : (
+              <>
+                <MessageSquare className="h-12 w-12 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Start a Conversation</h3>
+                <p className="max-w-md">
+                  Send a message to start chatting with your bot. The bot will respond based on its training.
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                message.sender === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-4 ${
+                  message.sender === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+          ))
+        )}
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-gray-800 bg-black/80 backdrop-blur-sm p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-2 items-end">
-            <div className="relative flex-1">
-              <TextareaAutosize
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
-                className="w-full resize-none rounded-2xl border border-gray-800 bg-gray-900 px-4 py-3 focus:border-violet-700 focus:ring focus:ring-violet-900 focus:ring-opacity-50 text-gray-100 placeholder:text-gray-500"
-                minRows={1}
-                maxRows={4}
-              />
-            </div>
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="rounded-full h-12 w-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none"
-            >
-              {isLoading ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-            </Button>
+      {/* Chat Input */}
+      <div className="p-4 border-t dark:border-gray-800">
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-end gap-2"
+        >
+          <div className="flex-1">
+            <TextareaAutosize
+              ref={textareaRef}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                !botInfo?.isActive
+                  ? "Bot is inactive. Please activate it in settings to chat."
+                  : botInfo?.trainingStatus !== "completed"
+                  ? "Bot is still training. Please wait until training is complete."
+                  : "Type your message..."
+              }
+              disabled={!botInfo?.isActive || botInfo?.trainingStatus !== "completed"}
+              className="w-full resize-none rounded-md border dark:border-gray-800 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              rows={1}
+            />
           </div>
-          <p className="text-xs text-center mt-3 text-gray-500">
-            {botInfo.name} is an AI assistant and may produce inaccurate information.
-          </p>
-        </div>
+          <Button
+            type="submit"
+            size="icon"
+            disabled={
+              !inputMessage.trim() ||
+              isLoading ||
+              !botInfo?.isActive ||
+              botInfo?.trainingStatus !== "completed"
+            }
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
+
+      {/* Insufficient Credits Dialog */}
+      <Dialog open={showInsufficientCreditsDialog} onOpenChange={setShowInsufficientCreditsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insufficient Credits</DialogTitle>
+            <DialogDescription>
+              You don't have enough credits to interact with this bot. Please add more credits to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInsufficientCreditsDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCredits}>
+              Add Credits
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
