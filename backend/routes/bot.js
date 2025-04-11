@@ -2,6 +2,8 @@ import express from "express";
 import { validate } from "../middlewares/validate.js";
 import Bot from "../models/Bots.js";
 import Scrape from "../models/Scrape.js";
+import User from "../models/User.js";
+import BotTransaction from "../models/BotTransaction.js";
 import {
   uploadFile,
   fineTune,
@@ -24,7 +26,7 @@ router.get("/", validate, async (req, res) => {
   try {
     const bots = await Bot.find({ owner: req.user._id })
       .sort({ createdAt: -1 })
-      .select("name botModelId trainingStatus isPublic createdAt");
+      .select("name botModelId trainingStatus isPublic isActive createdAt");
 
     res.json({
       success: true,
@@ -46,7 +48,7 @@ router.get("/", validate, async (req, res) => {
  * @access Private
  */
 router.post("/create", validate, async (req, res) => {
-  const { scrapeId, name, botModel = "gpt-4o-mini-2024-07-18" } = req.body;
+  const { scrapeId, name, botModel = "gpt-4o-mini-2024-07-18", category = "Other" } = req.body;
 
   if (!scrapeId) {
     return res.status(400).json({
@@ -78,6 +80,7 @@ router.post("/create", validate, async (req, res) => {
       owner: req.user._id,
       fileId: scrape.s3FileName,
       jobId,
+      category,
     });
 
     res.status(201).json({
@@ -193,10 +196,11 @@ router.delete("/delete/:id", validate, async (req, res) => {
     });
   }
 });
+
 // Route to update bot's public status
 router.patch("/update/:id", validate, async (req, res) => {
   const { id } = req.params;
-  const { isPublic } = req.body;
+  const { name, isPublic, isActive, category } = req.body;
 
   if (!id) {
     return res.status(400).json({
@@ -206,9 +210,27 @@ router.patch("/update/:id", validate, async (req, res) => {
   }
 
   try {
+    const updateData = {};
+    
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    
+    if (isPublic !== undefined) {
+      updateData.isPublic = isPublic;
+    }
+    
+    if (isActive !== undefined) {
+      updateData.isActive = isActive;
+    }
+
+    if (category !== undefined) {
+      updateData.category = category;
+    }
+
     const bot = await Bot.findOneAndUpdate(
       { _id: id, owner: req.user._id },
-      { isPublic },
+      updateData,
       { new: true }
     );
 
@@ -233,7 +255,78 @@ router.patch("/update/:id", validate, async (req, res) => {
     });
   }
 });
-// Route to get a bot by ID
+
+// Route to get all public bots
+router.get("/public", async (req, res) => {
+  try {
+    const bots = await Bot.find({ isPublic: true, isActive: true })
+      .select("name description category owner totalInteractions rating isActive")
+      .populate("owner", "username")
+      .sort({ totalInteractions: -1 })
+
+    res.json({
+      success: true,
+      data: bots,
+    })
+  } catch (error) {
+    console.error("Error fetching public bots:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch public bots",
+    })
+  }
+})
+
+// Get trending bots
+router.get("/trending", async (req, res) => {
+  try {
+    const bots = await Bot.find({ isPublic: true, isActive: true })
+      .select("name description category owner totalInteractions rating isActive")
+      .populate("owner", "username")
+      .sort({ totalInteractions: -1, rating: -1 })
+      .limit(6)
+
+    res.json({
+      success: true,
+      data: bots,
+    })
+  } catch (error) {
+    console.error("Error fetching trending bots:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch trending bots",
+    })
+  }
+})
+
+// Get public bot details
+router.get("/public/:id", async (req, res) => {
+  try {
+    const bot = await Bot.findOne({ _id: req.params.id, isPublic: true })
+      .select("name description category owner totalInteractions rating isActive")
+      .populate("owner", "username")
+
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found",
+      })
+    }
+
+    res.json({
+      success: true,
+      data: bot,
+    })
+  } catch (error) {
+    console.error("Error fetching public bot:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bot details",
+    })
+  }
+})
+
+// Get bot by ID
 router.get("/:id", validate, async (req, res) => {
   const { id } = req.params;
 
@@ -248,7 +341,7 @@ router.get("/:id", validate, async (req, res) => {
     const bot = await Bot.findOne({
       _id: id,
       owner: req.user._id,
-    });
+    }).select("name botModelId trainingStatus isPublic isActive createdAt");
 
     if (!bot) {
       return res.status(404).json({
@@ -259,7 +352,6 @@ router.get("/:id", validate, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Bot retrieved successfully",
       data: bot,
     });
   } catch (error) {
@@ -271,26 +363,69 @@ router.get("/:id", validate, async (req, res) => {
     });
   }
 });
-// Route to get all public bots
-router.get("/public", async (req, res) => {
+
+// Interact with public bot
+router.post("/public/interact/:id", async (req, res) => {
   try {
-    const bots = await Bot.find({ isPublic: true })
-      .sort({ createdAt: -1 })
-      .select("name botModelId trainingStatus isPublic createdAt");
+    const { message } = req.body
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required",
+      })
+    }
+
+    const bot = await Bot.findOne({ _id: req.params.id, isPublic: true, isActive: true })
+    if (!bot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found or inactive",
+      })
+    }
+
+    // Check user credits
+    const user = await User.findById(req.user.id)
+    if (user.credits < 1) {
+      return res.status(402).json({
+        success: false,
+        message: "Insufficient credits",
+      })
+    }
+
+    // Deduct credits
+    user.credits -= 1
+    await user.save()
+
+    // Increment bot interactions
+    bot.totalInteractions += 1
+    await bot.save()
+
+    // Create bot transaction
+    const botTransaction = new BotTransaction({
+      botId: bot._id,
+      userId: req.user.id,
+      input: message,
+      response: "Bot response here", // Replace with actual bot response
+      status: "success",
+      processingTime: 0, // Replace with actual processing time
+    })
+    await botTransaction.save()
 
     res.json({
       success: true,
-      data: bots,
-    });
+      data: {
+        response: "Bot response here", // Replace with actual bot response
+      },
+      userCredits: user.credits,
+    })
   } catch (error) {
-    console.error("Get public bots error:", error);
+    console.error("Error interacting with public bot:", error)
     res.status(500).json({
       success: false,
-      message: "Failed to retrieve public bots",
-      error: error.message,
-    });
+      message: "Failed to interact with bot",
+    })
   }
-});
+})
 
 /**
  * @route POST /api/bot/interact/:id
@@ -322,7 +457,7 @@ router.post("/interact/:id", validate, async (req, res) => {
       ...(req.user?._id
         ? { $or: [{ owner: req.user._id }, { isPublic: true }] }
         : { isPublic: true }),
-    }).select("name botModelId trainingStatus isPublic owner");
+    }).select("name botModelId trainingStatus isPublic owner isActive");
 
     if (!bot) {
       return res.status(404).json({
@@ -341,12 +476,37 @@ router.post("/interact/:id", validate, async (req, res) => {
       });
     }
 
+    // Check if bot is active
+    if (!bot.isActive) {
+      return res.status(423).json({
+        success: false,
+        message: "This bot is currently inactive",
+      });
+    }
+
+    // Check if user has enough credits (only for authenticated users)
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      if (user.credits < 1) {
+        return res.status(403).json({
+          success: false,
+          message: "Insufficient credits. Please add more credits to continue.",
+        });
+      }
+    }
+
+    // Record start time for processing time calculation
+    const startTime = Date.now();
+
     // Interact with the bot using standardized system message
     const response = await interactWithBot(
       bot.botModelId,
       message,
       bot.name // Company name for system message
     );
+
+    // Calculate processing time
+    const processingTime = Date.now() - startTime;
 
     // Format response
     const result = {
@@ -360,6 +520,38 @@ router.post("/interact/:id", validate, async (req, res) => {
         totalTokens: response.usage?.total_tokens,
       },
     };
+
+    // Create transaction record and update user credits if authenticated
+    if (req.user) {
+      // Create transaction record
+      const transaction = new BotTransaction({
+        botId: bot._id,
+        ownerId: req.user._id,
+        input: message,
+        response: result.response,
+        metadata: {
+          promptTokens: response.usage?.prompt_tokens,
+          completionTokens: response.usage?.completion_tokens,
+          totalTokens: response.usage?.total_tokens,
+        },
+        processingTime,
+        status: "success",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"]
+      });
+      
+      await transaction.save();
+      
+      // Deduct credits from user
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $inc: { credits: -1 } },
+        { new: true }
+      );
+      
+      // Include updated credit balance in response
+      result.userCredits = updatedUser.credits;
+    }
 
     res.json({
       success: true,
@@ -382,7 +574,139 @@ router.post("/interact/:id", validate, async (req, res) => {
   }
 });
 
+// Route to duplicate a bot
+router.post("/duplicate/:id", validate, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
 
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot ID is required",
+    });
+  }
+
+  if (!name) {
+    return res.status(400).json({
+      success: false,
+      message: "Bot name is required",
+    });
+  }
+
+  try {
+    // Find the original bot
+    const originalBot = await Bot.findOne({
+      _id: id,
+      owner: req.user._id,
+    });
+
+    if (!originalBot) {
+      return res.status(404).json({
+        success: false,
+        message: "Bot not found",
+      });
+    }
+
+    // Create a new bot with the same properties but a different name
+    const newBot = new Bot({
+      name,
+      owner: req.user._id,
+      botModelId: originalBot.botModelId,
+      trainingStatus: originalBot.trainingStatus,
+      isPublic: false, // Default to private for duplicated bots
+      isActive: true,  // Default to active for duplicated bots
+      fileId: originalBot.fileId,
+    });
+
+    await newBot.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Bot duplicated successfully",
+      data: newBot,
+    });
+  } catch (error) {
+    console.error("Duplicate bot error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to duplicate bot",
+      error: error.message,
+    });
+  }
+});
+
+// Get dashboard statistics
+router.get("/dashboard/stats", validate, async (req, res) => {
+  try {
+    // Get total bots count
+    const totalBots = await Bot.countDocuments({ owner: req.user._id });
+    
+    // Get active bots count
+    const activeBots = await Bot.countDocuments({ 
+      owner: req.user._id,
+      isActive: true 
+    });
+    
+    // Get public bots count
+    const publicBots = await Bot.countDocuments({ 
+      owner: req.user._id,
+      isPublic: true 
+    });
+    
+    // Get total interactions
+    const totalInteractions = await BotTransaction.countDocuments({ 
+      userId: req.user._id 
+    });
+    
+    // Get recent bot transactions
+    const recentTransactions = await BotTransaction.find({ 
+      userId: req.user._id 
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('botId', 'name');
+
+    res.json({
+      success: true,
+      data: {
+        totalBots,
+        activeBots,
+        publicBots,
+        totalInteractions,
+        recentTransactions
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dashboard statistics"
+    });
+  }
+});
+
+// Get user conversations
+router.get("/conversations", validate, async (req, res) => {
+  try {
+    const conversations = await BotTransaction.find({ 
+      userId: req.user._id 
+    })
+      .sort({ createdAt: -1 })
+      .populate('botId', 'name')
+      .select('botId input response status createdAt processingTime');
+
+    res.json({
+      success: true,
+      data: conversations
+    });
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch conversations"
+    });
+  }
+});
 
 // Helper functions
 async function validateAndGetScrape(scrapeId, userId) {
@@ -457,7 +781,7 @@ async function startFineTuningProcess(jsonlData, model) {
   }
 }
 
-async function createBotRecord({ name, owner, fileId, jobId }) {
+async function createBotRecord({ name, owner, fileId, jobId, category }) {
   try {
     const bot = new Bot({
       name,
@@ -465,6 +789,7 @@ async function createBotRecord({ name, owner, fileId, jobId }) {
       botModelId: jobId,
       trainingStatus: "pending",
       fileId,
+      category,
     });
 
     await bot.save();
