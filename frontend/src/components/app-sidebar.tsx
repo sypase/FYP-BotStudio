@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Bot, Home, LogOut, AudioWaveform } from "lucide-react";
+import { Bot, Home, LogOut, AudioWaveform, User, CreditCard } from "lucide-react";
 
 // Removed the useTheme import and the Sun/Moon icons
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,10 @@ import { serverURL } from "@/utils/utils";
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(
+  const [user, setUser] = useState<{ name: string; email: string; credits: number } | null>(
     null
   );
+  const [credits, setCredits] = useState<number>(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,7 +60,36 @@ export default function AppSidebar() {
       }
     };
 
+    const fetchCredits = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const response = await axios.get(`${serverURL}/credits/available`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setCredits(response.data.credits);
+      } catch (error) {
+        console.error("Failed to fetch credits", error);
+      }
+    };
+
+    // Listen for credits updated event
+    const handleCreditsUpdated = (event: CustomEvent) => {
+      setCredits(event.detail.credits);
+    };
+
+    window.addEventListener('creditsUpdated', handleCreditsUpdated as EventListener);
+
     fetchUserData();
+    fetchCredits();
+
+    return () => {
+      window.removeEventListener('creditsUpdated', handleCreditsUpdated as EventListener);
+    };
   }, [router]);
 
   const handleLogout = () => {
@@ -85,18 +115,23 @@ export default function AppSidebar() {
     },
     {
       title: "Chat",
-      href: "/scraper",
+      href: "/conversations",
       icon: AudioWaveform,
     },
     {
       title: "Shop",
-      href: "/scraper",
-      icon: AudioWaveform,
+      href: "/credits",
+      icon: CreditCard,
     },
     {
       title: "Marketplace",
-      href: "/scraper",
+      href: "/marketplace",
       icon: AudioWaveform,
+    },
+    {
+      title: "Profile",
+      href: "/profile",
+      icon: User,
     },
     {
       title: "Settings",
@@ -163,6 +198,9 @@ export default function AppSidebar() {
                 {" "}
                 {/* Use text-gray-400 for dark theme */}
                 {user.email}
+              </span>
+              <span className="text-sm text-primary font-medium mt-1">
+                Credits: {credits}
               </span>
             </div>
             {/* Removed the theme switch button */}

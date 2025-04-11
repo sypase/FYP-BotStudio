@@ -34,7 +34,7 @@
     "qr-image": "^3.2.0",
     "qrcode": "^1.5.3",
     "razorpay": "^2.9.1",
-    "stripe": "^12.16.0"
+    "stripe": "^12.18.0"
   },
   "devDependencies": {
     "@gradio/client": "^0.19.4"

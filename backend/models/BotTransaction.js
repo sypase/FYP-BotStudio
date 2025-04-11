@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const botTransactionSchema = new mongoose.Schema(
     {
@@ -55,4 +55,4 @@ botTransactionSchema.index({ createdAt: -1 });
 
 const BotTransaction = mongoose.model('BotTransaction', botTransactionSchema);
 
-module.exports = BotTransaction;
+export default BotTransaction;

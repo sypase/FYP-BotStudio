@@ -7,18 +7,32 @@ import users from "./routes/users.js";
 import scrape from "./routes/scrape.js";
 import datas from "./routes/data.js";
 import bot from "./routes/bot.js";
+import credits from "./routes/credits.js";
+import botTransactions from "./routes/botTransactions.js";
+import botAnalytics from "./routes/botAnalytics.js";
 
 dotenv.config();
 
 const app = express();
+
+// Configure CORS
 app.use(cors());
+
+// Regular middleware for JSON parsing
 app.use(express.json());
 
+// Special handling for Stripe webhooks
+app.use("/credits/webhook", express.raw({ type: "application/json" }));
+
+// Routes
 app.use("/test", test);
 app.use("/users", users);
 app.use("/scrape", scrape);
 app.use("/data", datas);
 app.use("/bot", bot);
+app.use("/credits", credits);
+app.use("/bot-transactions", botTransactions);
+app.use("/bot-analytics", botAnalytics);
 
 app.get("/", (req, res) => {
   res.send("BotSTUDIO API Is running");

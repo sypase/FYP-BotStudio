@@ -1,4 +1,4 @@
-const serverURL = "http://localhost:8080"
+const serverURL = "http://localhost:8087"
 const currencySymbol = "₹";
 const appName = "BotStudio";
 

@@ -19,6 +19,7 @@ import {
   X,
   Clock,
   Zap,
+  Globe,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -42,6 +43,12 @@ import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { serverURL } from "@/utils/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface BotType {
   _id: string
@@ -50,6 +57,7 @@ interface BotType {
   botModelId: string
   trainingStatus: "pending" | "completed" | "failed"
   isPublic: boolean
+  isActive: boolean
   createdAt: string
   fileId: string
   owner: string
@@ -466,10 +474,18 @@ function BotCard({
     switch (bot.trainingStatus) {
       case "completed":
         return (
-          <Badge variant="default" className="flex items-center gap-1 bg-green-600 hover:bg-green-700">
-            <Check className="h-3 w-3" />
-            Active
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className={`flex items-center gap-1 ${bot.isActive ? "bg-green-600 hover:bg-green-700" : "bg-gray-500 hover:bg-gray-600"}`}>
+              <Check className="h-3 w-3" />
+              {bot.isActive ? "Active" : "Inactive"}
+            </Badge>
+            {bot.isPublic && (
+              <Badge variant="outline" className="flex items-center gap-1 border-blue-500 text-blue-500">
+                <Globe className="h-3 w-3" />
+                Public
+              </Badge>
+            )}
+          </div>
         )
       case "pending":
         return (
@@ -588,16 +604,31 @@ function BotCard({
         </div>
       </CardContent>
       <CardFooter className="flex gap-2 border-t dark:border-gray-800 pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-700"
-          onClick={() => router.push(`/bots/${bot._id}/chat`)}
-          disabled={bot.trainingStatus !== "completed"}
-        >
-          <MessageSquare className="h-4 w-4" />
-          Chat
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-700"
+                  onClick={() => router.push(`/bots/${bot._id}/chat`)}
+                  disabled={bot.trainingStatus !== "completed" || !bot.isActive}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Chat
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {bot.trainingStatus !== "completed" 
+                ? "Bot is still training" 
+                : !bot.isActive 
+                  ? "Bot is inactive. Enable it in settings to chat." 
+                  : "Chat with this bot"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Button
           variant="outline"
           size="sm"
