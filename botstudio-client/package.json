@@ -1,9 +1,12 @@
 {
   "name": "botstudio-client",
   "version": "1.0.0",
-  "description": "Client library for BotStudio API",
+  "description": "Official TypeScript client library for BotStudio API - A platform for creating and managing AI-powered chatbots",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "ts-node test.ts",
@@ -12,10 +15,21 @@
   "keywords": [
     "botstudio",
     "api",
-    "client"
+    "client",
+    "chatbot",
+    "ai",
+    "typescript"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "BotStudio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/FYP-BotStudio"
+  },
+  "homepage": "https://github.com/yourusername/FYP-BotStudio",
+  "bugs": {
+    "url": "https://github.com/yourusername/FYP-BotStudio/issues"
+  },
   "dependencies": {
     "axios": "^1.6.8"
   },
@@ -23,5 +37,8 @@
     "@types/node": "^20.11.24",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 } 

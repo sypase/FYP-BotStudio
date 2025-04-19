@@ -207,7 +207,7 @@ export default function AppSidebar() {
             <Button
               variant="outline"
               size="sm"
-              className="justify-start gap-2"
+              className="justify-start gap-2 hover:text-black"
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />

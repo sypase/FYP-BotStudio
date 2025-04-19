@@ -6,6 +6,7 @@ import { ArrowRight, Bot, Code, Shield, Zap } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
+import AnimatedBeamDemo from "@/components/magicui/animated-beam-demo";
 
 export default function Home() {
   return (
@@ -38,6 +39,9 @@ export default function Home() {
 
           <section className="py-20 bg-background">
             <div className="container mx-auto px-4">
+              <div className="relative w-full h-[400px] -mt-20 mb-12">
+                <AnimatedBeamDemo />
+              </div>
               <h2 className="text-3xl font-bold text-center mb-12 text-foreground">Why Choose BotStudio?</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <Card className="hover:shadow-lg transition-shadow">
@@ -94,7 +98,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="py-20 bg-gradient-to-b from-muted to-background">
+          <section className="py-20 bg-gradient-to-b from-background to-muted">
             <div className="container mx-auto px-4 text-center">
               <h2 className="text-3xl font-bold mb-6 text-foreground">Ready to Get Started?</h2>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
