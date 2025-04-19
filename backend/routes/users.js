@@ -20,7 +20,6 @@ router.get("/", validate, async (req, res) => {
     const user = await User.findById(req.user._id).select("-password"); // Exclude password from the response
     if (!user) return res.status(404).send("User not found");
 
-
     // Include credits and referral code in the response
     res.send({
       user: {
@@ -36,6 +35,8 @@ router.get("/", validate, async (req, res) => {
 
 router.post("/signup", async (req, res) => {
   console.log("asd");
+  console.log("asdasdsadasd");
+  
   const schema = joi.object({
     name: joi.string().min(3).required(),
     email: joi.string().min(6).required().email(),
@@ -81,7 +82,7 @@ function generateUniqueReferralCode() {
 
 router.post("/login", async (req, res) => {
   console.log("login");
-  
+
   const schema = joi.object({
     email: joi.string().min(6).required().email(),
     password: joi.string().min(6),
@@ -102,7 +103,6 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
 
     console.log(token);
-    
 
     return res.send({ user: user, token: token });
   } catch (err) {
@@ -241,9 +241,8 @@ router.post("/verify-email", async (req, res) => {
 });
 
 router.post("/reset-password", async (req, res) => {
-
   console.log("asdasdasdasdaseyta");
-  
+
   const schema = joi.object({
     email: joi.string().email().required(),
   });
@@ -348,7 +347,6 @@ router.post("/reset-password/confirm", async (req, res) => {
   }
 });
 
-
 router.post("/google-auth", async (req, res) => {
   try {
     const { tokenId } = req.body;
@@ -368,7 +366,6 @@ router.post("/google-auth", async (req, res) => {
 
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 30);
-
     }
 
     // Generate a JWT token and send it back to the client
@@ -378,6 +375,27 @@ router.post("/google-auth", async (req, res) => {
   } catch (error) {
     console.error("Error authenticating with Google:", error);
     return res.status(500).json({ error: "Error authenticating with Google" });
+  }
+});
+
+//make a route for admin login
+router.post("/admin-login", async (req, res) => {
+  const schema = joi.object({
+    email: joi.string().email().required(),
+    password: joi.string().min(6).required(),
+  });
+
+  try {
+    const data = await schema.validateAsync(req.body);
+    const user = await User.findOne({ email: data.email });
+    if (!user) return res.status(404).send("User not found");
+    if (user.type !== "admin") return res.status(403).send("Access denied. Admin privileges required.");
+    const validPassword = await bcrypt.compare(data.password, user.password);
+    if (!validPassword) return res.status(400).send("Invalid password");
+    const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
+    return res.send({ user: user, token: token });
+  } catch (err) {
+    return res.status(500).send(err);
   }
 });
 

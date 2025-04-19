@@ -206,6 +206,7 @@ export default function CreditShop() {
             <Button 
               onClick={handleCustomPurchase}
               disabled={isLoading || !customAmount}
+              className="text-black"
             >
               {isLoading ? 'Processing...' : 'Purchase Custom Amount'}
             </Button>
@@ -234,7 +235,7 @@ export default function CreditShop() {
             <CardFooter>
               <Button
                 onClick={() => handlePurchase(pkg)}
-                className="w-full"
+                className="w-full text-black"
                 disabled={isLoading}
               >
                 {isLoading ? 'Processing...' : 'Purchase'}

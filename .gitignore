@@ -5,8 +5,8 @@
 /.next
 ./backend/node_modules
 ./backend/dist
-./frontend/node_modules
-./frontend/.next
+frontend/node_modules
+frontend/.next
 /.env
 /.env.local
 /.env.development
@@ -14,3 +14,16 @@
 /.env.test
 /.env.development.local
 ./frontend/.next
+frontend-admin/.next
+frontend-admin/.env
+./frontend-admin/.env.local
+./frontend-admin/.env.development
+./frontend-admin/.env.production
+./frontend-admin/.env.test
+./frontend-admin/.env.development.local
+
+
+/botstudio-client/node_modules
+/botstudio-client/dist
+
+

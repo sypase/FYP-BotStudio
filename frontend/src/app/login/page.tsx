@@ -1,26 +1,44 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { toast } from 'sonner'
-import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { serverURL } from '../../utils/utils';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
+import Link from "next/link"
+import { serverURL } from '@/utils/utils'
 
-export default function Home() {
+export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false)
+  const [welcomeText, setWelcomeText] = useState('')
+  const fullText = 'Welcome Back'
 
   useEffect(() => {
-    // Check if token exists in localStorage and redirect if present
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    }
-  }, [router]);
+    let currentText = ''
+    let currentIndex = 0
 
-  const login = async () => {
+    const interval = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        currentText += fullText[currentIndex]
+        setWelcomeText(currentText)
+        currentIndex++
+      } else {
+        clearInterval(interval)
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
     try {
       const response = await fetch(`${serverURL}/users/login`, {
         method: 'POST',
@@ -28,98 +46,83 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-      });
+      })
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data || 'Login failed');
-      }
+      const data = await response.json()
 
-      localStorage.setItem('token', data.token);
-      toast.success('Logged In!');
-      
-      // Redirect user after successful login
-      window.location.href = "/dashboard";
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
+      if (response.ok) {
+        localStorage.setItem('token', data.token)
+        toast.success('Login successful!')
+        router.push('/dashboard')
       } else {
-        toast.error('An unknown error occurred');
+        toast.error(data.error || 'Login failed')
       }
+    } catch (error) {
+      toast.error('An error occurred during login')
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center p-8 space-y-8">
-      {/* Logo with dark mode gradient */}
-      <Link href="/" className="flex items-center gap-4 mb-12">
-        <span className="text-3xl font-bold bg-gradient-to-r from-purple-200 to-purple-500 bg-clip-text text-transparent">
-          BotStudio
-        </span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted p-4">
+      <Link href="/" className="text-2xl font-bold text-white mb-8">
+        BotStudio
       </Link>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md space-y-8"
-      >
-        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Welcome back</h2>
-            <form onSubmit={(e) => { e.preventDefault(); login(); }} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="text-sm font-medium text-gray-700 block mb-2">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="text-sm font-medium text-gray-700 block mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Sign in
-                </button>
-              </div>
-            </form>
-          </div>
-          <div className="px-8 py-6 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-            <span className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Sign up
-              </Link>
-            </span>
-            <Link href="/forgotpassword" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-              Forgot password?
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center text-white">
+            {welcomeText}
+          </CardTitle>
+          <CardDescription className="text-center text-white">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="text-white"
+              />
+            </div>
+            <Button type="submit" className="w-full text-white" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-center text-sm text-white">
+            <Link href="/forgotpassword" className="text-primary hover:underline">
+              Forgot your password?
             </Link>
           </div>
-        </div>
-      </motion.div>
-    </main>
+          <div className="text-center text-sm text-white">
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
   )
 }

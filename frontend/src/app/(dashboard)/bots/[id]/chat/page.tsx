@@ -472,15 +472,20 @@ export default function BotChatPage() {
               <div
                 className={`max-w-[80%] rounded-lg p-4 ${
                   message.sender === "user"
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-black"
                     : "bg-muted"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.sender === "user" ? (
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.isTyping ? message.displayedContent : message.content}</p>
+                )}
               </div>
             </div>
           ))
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Chat Input */}
@@ -503,7 +508,7 @@ export default function BotChatPage() {
                   : "Type your message..."
               }
               disabled={!botInfo?.isActive || botInfo?.trainingStatus !== "completed"}
-              className="w-full resize-none rounded-md border dark:border-gray-800 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full resize-none rounded-md border dark:border-gray-800 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-black"
               rows={1}
             />
           </div>

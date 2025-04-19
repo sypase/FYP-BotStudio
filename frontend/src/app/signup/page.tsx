@@ -1,165 +1,242 @@
 'use client';
 
-import axios from 'axios';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Toaster, toast } from 'sonner';
-import { serverURL } from '../../utils/utils';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import Link from "next/link";
+import { serverURL } from '@/utils/utils';
 
-export default function Signup() {
-  const [email, setEmail] = useState<string>("");
-  const [name, setName] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [verificationCode, setVerificationCode] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [formStep, setFormStep] = useState<number>(1);
+export default function SignupPage() {
+  const router = useRouter();
+  const [step, setStep] = useState(1); // 1: Email verification, 2: Complete registration
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    verificationCode: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem("token")) {
-      window.location.href = "/chat";
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSendVerificationCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${serverURL}/users/send-verification-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Verification code sent to your email');
+        setStep(2);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to send verification code');
+      }
+    } catch (error) {
+      toast.error('An error occurred while sending verification code');
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
-  const sendVerificationCode = async () => {
-    setLoading(true);
-    if (email === "") {
-      toast.error("Please enter your email!");
-      setLoading(false);
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${serverURL}/users/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: formData.verificationCode
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Email verified successfully');
+        setStep(3);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Invalid verification code');
+      }
+    } catch (error) {
+      toast.error('An error occurred during verification');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      setIsLoading(false);
       return;
     }
 
     try {
-      await axios.post(`${serverURL}/users/send-verification-code`, { email });
-      toast.success("Verification Code Sent!");
-      setLoading(false);
-      setFormStep(2);
-    } catch (error) {
-      toast.error("Something went wrong! Please try again later.");
-      setLoading(false);
-    }
-  };
+      const response = await fetch(`${serverURL}/users/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
 
-  const verifyEmail = async () => {
-    if (name === "" || password === "" || verificationCode === "") {
-      toast.error("Please fill out all fields!");
-      return;
-    }
+      const data = await response.json();
 
-    try {
-      await axios.post(`${serverURL}/users/verify-email`, { email, code: verificationCode });
-      toast.success("Email verified!");
-      signup();
+      if (response.ok) {
+        toast.success('Account created successfully!');
+        router.push('/login');
+      } else {
+        toast.error(data.error || 'Signup failed');
+      }
     } catch (error) {
-      toast.error("Something went wrong! Please try again later.");
-    }
-  };
-
-  const signup = async () => {
-    try {
-      await axios.post(`${serverURL}/users/signup`, { name, email, password });
-      toast.success("Account created!");
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 1000);
-    } catch (error) {
-      toast.error("Something went wrong!");
+      toast.error('An error occurred during signup');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 flex flex-col items-center justify-center p-8 space-y-12">
-      <div className="mb-8 transition-all duration-500 ease-in-out transform hover:scale-105">
-        <span className="text-3xl font-bold bg-gradient-to-r from-purple-200 to-purple-500 bg-clip-text text-transparent">
-          BotStudio
-        </span>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted p-4">
+      <Link href="/" className="text-2xl font-bold text-foreground mb-8">
+        BotStudio
+      </Link>
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            {step === 1 ? 'Enter Your Email' : step === 2 ? 'Verify Your Email' : 'Create an Account'}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {step === 1 ? 'We\'ll send you a verification code' : 
+             step === 2 ? 'Enter the verification code sent to your email' :
+             'Complete your registration'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {step === 1 && (
+            <form onSubmit={handleSendVerificationCode} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full text-black" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Verification Code'}
+              </Button>
+            </form>
+          )}
 
-      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transition-all duration-500 ease-in-out transform hover:shadow-3xl space-y-8">
-        {formStep === 1 && (
-          <div className="transition-opacity duration-300 ease-in-out space-y-4">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">Get Started</h2>
-            <input
-              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
-              placeholder="Enter your email"
-              type="email"
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
-            />
-            <button
-              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out mb-4"
-              onClick={sendVerificationCode}
-              disabled={loading}
-            >
-              {loading ? <span className="loading loading-spinner"></span> : "Continue with email"}
-            </button>
+          {step === 2 && (
+            <form onSubmit={handleVerifyEmail} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">Verification Code</Label>
+                <Input
+                  id="verificationCode"
+                  name="verificationCode"
+                  type="text"
+                  placeholder="Enter verification code"
+                  value={formData.verificationCode}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full text-black" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify Email'}
+              </Button>
+            </form>
+          )}
+
+          {step === 3 && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full text-black" disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Create Account'}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
           </div>
-        )}
-
-        {formStep === 2 && (
-          <div className="transition-opacity duration-300 ease-in-out space-y-4">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">Your Details</h2>
-            <input
-              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
-              placeholder="Full Name"
-              type="text"
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-            />
-            <button 
-              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
-              onClick={() => setFormStep(3)}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {formStep === 3 && (
-          <div className="transition-opacity duration-300 ease-in-out space-y-4">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">Set Password</h2>
-            <input
-              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
-              placeholder="Password"
-              type="password"
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-            />
-            <button 
-              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
-              onClick={() => setFormStep(4)}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {formStep === 4 && (
-          <div className="transition-opacity duration-300 ease-in-out space-y-4">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">Verify Email</h2>
-            <input
-              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out"
-              placeholder="Verification Code"
-              type="text"
-              onChange={(e) => setVerificationCode(e.target.value)}
-              value={verificationCode}
-            />
-            <button 
-              className="w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out"
-              onClick={verifyEmail}
-            >
-              Create Account
-            </button>
-          </div>
-        )}
-
-        <p className="mt-6 text-center text-gray-600">
-          Already have an account?{" "}
-          <Link href="/login" className="text-indigo-600 hover:underline transition-colors duration-300 ease-in-out">
-            Log in
-          </Link>
-        </p>
-      </div>
-      <Toaster />
-    </main>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

@@ -175,8 +175,8 @@ export default function ProfilePage() {
             <CardDescription>Your available credits</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold mb-4">{credits}</div>
-            <Button onClick={handleAddCredits} className="w-full">
+            <div className="text-4xl font-bold mb-4 text-black">{credits}</div>
+            <Button onClick={handleAddCredits} className="w-full text-black">
               Add Credits
             </Button>
           </CardContent>
