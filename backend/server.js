@@ -10,6 +10,9 @@ import bot from "./routes/bot.js";
 import credits from "./routes/credits.js";
 import botTransactions from "./routes/botTransactions.js";
 import botAnalytics from "./routes/botAnalytics.js";
+import admin from "./routes/admin.js";
+import apiKeys from "./routes/apiKeys.js";
+import apiKeyInteractions from './routes/apiKeyInteractions.js';
 
 dotenv.config();
 
@@ -33,6 +36,9 @@ app.use("/bot", bot);
 app.use("/credits", credits);
 app.use("/bot-transactions", botTransactions);
 app.use("/bot-analytics", botAnalytics);
+app.use("/admin", admin);
+app.use("/api-keys", apiKeys);
+app.use("/api-key", apiKeyInteractions);
 
 app.get("/", (req, res) => {
   res.send("BotSTUDIO API Is running");

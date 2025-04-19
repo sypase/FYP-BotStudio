@@ -180,6 +180,8 @@ router.post('/verify-payment', validate, async (req, res) => {
       console.log('Payment not succeeded:', paymentIntent.status);
       return res.status(400).json({ error: 'Payment has not been completed' });
     }
+    //see amount in paymaentIntent
+    console.log('Payment succeeded:', paymentIntent.amount);
 
     // Check if credits were already added for this payment
     console.log('Checking for existing credit record');
