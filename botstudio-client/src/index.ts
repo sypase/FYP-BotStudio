@@ -14,8 +14,18 @@ export interface Bot {
 }
 
 export interface BotResponse {
-  response: string;
-  timestamp: string;
+  success: boolean;
+  data: {
+    response: string;
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+    processingTime: number;
+    remainingCredits: number;
+  };
+  error?: string;
 }
 
 export interface CreditBalance {
@@ -85,7 +95,8 @@ export class BotStudioClient {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to interact with bot');
+        const errorResponse = error.response?.data;
+        throw new Error(errorResponse?.error || 'Failed to interact with bot');
       }
       throw error;
     }

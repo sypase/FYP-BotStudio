@@ -16,7 +16,7 @@ export default function Home() {
         <main className="flex flex-col items-center justify-center w-full">
           <section className="flex-1 flex items-center justify-center bg-gradient-to-b from-background to-muted py-20">
             <div className="container mx-auto px-4 text-center">
-              <h1 className="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+              <h1 className="text-5xl font-bold mb-6 p-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                 Build Intelligent Bots with Ease
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

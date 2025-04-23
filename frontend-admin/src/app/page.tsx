@@ -10,7 +10,7 @@ import { serverURL } from "@/utils/utils";
 
 const quotes = [
   "Empowering AI, Empowering You",
-  "Innovate with Intelligence",
+  "Innovate with Intelligence", 
   "Shaping the Future of AI",
   "Smart Solutions for a Smarter World",
   "Unleashing the Power of AI",
@@ -78,7 +78,7 @@ export default function AdminPanel() {
             <p className="text-2xl mb-6 text-white">Welcome to the Admin Panel!</p>
             <button
               onClick={handleLogout}
-              className="px-8 py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-200 transition-colors duration-300 font-semibold"
+              className="px-8 py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-200 hover:text-black transition-colors duration-300 font-semibold"
             >
               Logout
             </button>

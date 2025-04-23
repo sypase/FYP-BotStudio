@@ -58,4 +58,43 @@ async function testClient() {
 }
 
 console.log('Starting BotStudio client tests...');
-testClient(); 
+testClient();
+
+async function testBotInteraction() {
+  console.log('\n=== Testing: Bot interaction ===');
+  const botId = '67f7e33095e62432d976e94d';
+  const message = 'what courses are there in the college?';
+  
+  console.log(`Sending message to bot ${botId}: "${message}"`);
+  
+  try {
+    const response = await client.interactWithBot(botId, message);
+    console.log('\nBot response:', response.data.response);
+    console.log('Remaining credits:', response.data.remainingCredits);
+    console.log('Processing time:', response.data.processingTime, 'ms');
+    console.log('Token usage:', response.data.usage);
+  } catch (error: unknown) {
+    console.error('\nError during interaction:');
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      if (error.stack) {
+        console.error('Stack trace:', error.stack);
+      }
+    } else {
+      console.error('Unknown error:', error);
+    }
+  }
+}
+
+// Run the test
+testBotInteraction().catch((error: unknown) => {
+  if (error instanceof Error) {
+    console.error('Test failed:', error.message);
+    if (error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+  } else {
+    console.error('Test failed with unknown error:', error);
+  }
+  process.exit(1);
+}); 

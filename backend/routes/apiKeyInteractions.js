@@ -2,6 +2,8 @@ import express from 'express';
 import { validateApiKey } from '../middlewares/validateApiKey.js';
 import Bot from '../models/Bots.js';
 import Credit from '../models/Credit.js';
+import BotTransaction from '../models/BotTransaction.js';
+import { interactWithBot } from '../utils/interactWithBot.js';
 
 const router = express.Router();
 
@@ -76,14 +78,82 @@ router.post('/bot/:botId/interact', validateApiKey, async (req, res) => {
       return res.status(400).json({ error: 'Bot is not active' });
     }
 
-    // TODO: Implement actual bot interaction logic here
-    // For now, return a mock response
+    // Check if bot is ready for interaction
+    if (bot.trainingStatus !== "completed") {
+      return res.status(423).json({
+        error: `Bot training in progress. Current status: ${bot.trainingStatus}`,
+        status: bot.trainingStatus,
+      });
+    }
+
+    // Check user credits
+    const credit = await Credit.findOne({ userId: req.apiKey.user });
+    if (!credit || credit.balance < 1) {
+      return res.status(402).json({ error: 'Insufficient credits' });
+    }
+
+    // Record start time for processing time calculation
+    const startTime = Date.now();
+
+    // Interact with the bot
+    const response = await interactWithBot(
+      bot.botModelId,
+      message,
+      bot.name
+    );
+
+    // Calculate processing time
+    const processingTime = Date.now() - startTime;
+
+    // Deduct credits
+    credit.balance -= 1;
+    await credit.save();
+
+    // Increment bot interactions
+    bot.totalInteractions += 1;
+    await bot.save();
+
+    // Create bot transaction
+    const botTransaction = new BotTransaction({
+      botId: bot._id,
+      ownerId: req.apiKey.user,
+      input: message,
+      response: response.choices[0]?.message?.content || "No response from bot",
+      metadata: {
+        promptTokens: response.usage?.prompt_tokens,
+        completionTokens: response.usage?.completion_tokens,
+        totalTokens: response.usage?.total_tokens,
+      },
+      processingTime,
+      status: "success",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"]
+    });
+    await botTransaction.save();
+
     res.json({
-      response: `Bot received your message: "${message}"`,
-      timestamp: new Date()
+      success: true,
+      data: {
+        response: response.choices[0]?.message?.content || "No response from bot",
+        usage: {
+          promptTokens: response.usage?.prompt_tokens,
+          completionTokens: response.usage?.completion_tokens,
+          totalTokens: response.usage?.total_tokens,
+        },
+        processingTime,
+        remainingCredits: credit.balance
+      }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to interact with bot' });
+    console.error("Error interacting with bot:", error);
+    const statusCode = error.statusCode || (error.message.includes("rate limit") ? 429 : 500);
+    
+    res.status(statusCode).json({
+      success: false,
+      error: error.message.includes("model")
+        ? "This bot is currently unavailable. Please try again later."
+        : error.message || "Failed to interact with bot"
+    });
   }
 });
 
