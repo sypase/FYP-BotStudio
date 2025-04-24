@@ -182,60 +182,57 @@ export default function CreditShop() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Credit Shop</h1>
+      <h1 className="text-3xl font-bold mb-8 text-white">Credit Shop</h1>
       
       {/* Custom Amount Section */}
-      <Card className="mb-8">
+      <Card className="mb-8 bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Custom Amount</CardTitle>
-          <CardDescription>Enter your desired credit amount ($0.1 per credit)</CardDescription>
+          <CardTitle className="text-white">Custom Amount</CardTitle>
+          <CardDescription className="text-gray-400">Enter your desired credit amount ($0.1 per credit)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
             <div className="flex-1">
-              <Label htmlFor="customAmount">Number of Credits</Label>
+              <Label htmlFor="customAmount" className="text-gray-300">Number of Credits</Label>
               <Input
                 id="customAmount"
                 type="number"
                 min="1"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                placeholder="Enter amount"
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               />
             </div>
-            <Button 
+            <Button
               onClick={handleCustomPurchase}
-              disabled={isLoading || !customAmount}
-              className="text-black"
+              disabled={isLoading}
+              className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
             >
-              {isLoading ? 'Processing...' : 'Purchase Custom Amount'}
+              {isLoading ? 'Processing...' : 'Purchase'}
             </Button>
           </div>
-          {customAmount && !isNaN(parseInt(customAmount)) && (
-            <div className="mt-4 text-sm text-muted-foreground">
-              Total payable: {formatPrice(parseInt(customAmount) * 0.1)}
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Predefined Packages */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Credit Packages */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {packages.map((pkg) => (
-          <Card key={pkg.id}>
+          <Card key={pkg.id} className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle>{pkg.amount} Credits</CardTitle>
-              <CardDescription>{formatPrice(pkg.price)}</CardDescription>
+              <CardTitle className="text-white">{pkg.amount} Credits</CardTitle>
+              <CardDescription className="text-gray-400">
+                {formatPrice(pkg.price)}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Purchase {pkg.amount} credits to use with our services
+              <p className="text-sm text-gray-400">
+                ${(pkg.price / pkg.amount).toFixed(2)} per credit
               </p>
             </CardContent>
             <CardFooter>
               <Button
+                className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
                 onClick={() => handlePurchase(pkg)}
-                className="w-full text-black"
                 disabled={isLoading}
               >
                 {isLoading ? 'Processing...' : 'Purchase'}
@@ -245,23 +242,20 @@ export default function CreditShop() {
         ))}
       </div>
 
+      {/* Payment Dialog */}
       <Dialog open={!!selectedPackage} onOpenChange={() => {
         setSelectedPackage(null);
         setClientSecret(null);
-        setCustomAmount('');
-        setIsCustomAmount(false);
       }}>
-        <DialogContent>
+        <DialogContent className="bg-gray-900 border-gray-800">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               Purchase {selectedPackage?.amount} Credits
-              {isCustomAmount && ` (Custom Amount)`}
             </DialogTitle>
-            <DialogDescription>
-              Total payable: {selectedPackage && formatPrice(selectedPackage.price)}
+            <DialogDescription className="text-gray-400">
+              Total: {formatPrice(selectedPackage?.price || 0)}
             </DialogDescription>
           </DialogHeader>
-          <Separator className="my-4" />
           {clientSecret && (
             <PaymentForm
               clientSecret={clientSecret}

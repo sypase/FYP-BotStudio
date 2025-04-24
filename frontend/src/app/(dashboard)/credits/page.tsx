@@ -4,7 +4,7 @@ import CreditShop from '@/components/CreditShop';
 
 export default function CreditsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen dark:bg-gray-950">
       <CreditShop />
     </div>
   );

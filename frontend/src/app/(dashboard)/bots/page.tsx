@@ -219,35 +219,35 @@ export default function BotsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 dark:bg-gray-950 dark:text-gray-100 min-h-screen ">
+      <div className="p-6 dark:bg-gray-950 min-h-screen">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">My Bots</h1>
-          <Button disabled className="dark:bg-gray-800 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-white">My Bots</h1>
+          <Button disabled className="bg-gray-800 text-white">
             <Plus className="h-4 w-4 mr-2" />
             Create New Bot
           </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="dark:bg-gray-900 dark:border-gray-800">
+            <Card key={i} className="bg-gray-900 border-gray-800">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  <div className="h-8 w-8 rounded-full bg-gray-700 animate-pulse" />
+                  <div className="h-8 w-8 rounded-full bg-gray-700 animate-pulse" />
                 </div>
-                <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-                <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+                <div className="h-6 w-3/4 bg-gray-700 animate-pulse rounded" />
+                <div className="h-4 w-full bg-gray-700 animate-pulse rounded" />
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between">
-                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+                  <div className="h-4 w-16 bg-gray-700 animate-pulse rounded" />
+                  <div className="h-4 w-16 bg-gray-700 animate-pulse rounded" />
+                  <div className="h-4 w-16 bg-gray-700 animate-pulse rounded" />
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-8 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+                  <div key={i} className="h-8 w-full bg-gray-700 animate-pulse rounded" />
                 ))}
               </CardFooter>
             </Card>
@@ -258,58 +258,47 @@ export default function BotsPage() {
   }
 
   return (
-    <div className="p-6 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold">My Bots</h1>
-          <p className="text-muted-foreground dark:text-gray-400">
-            Manage and interact with your trained AI assistants
-          </p>
-        </div>
-
+    <div className="p-6 dark:bg-gray-950 min-h-screen">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-white">My Bots</h1>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition-all duration-200 hover:shadow-lg">
-              <Plus className="h-4 w-4" />
+            <Button className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black">
+              <Plus className="h-4 w-4 mr-2" />
               Create New Bot
             </Button>
           </DialogTrigger>
-          <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
+          <DialogContent className="bg-gray-900 border-gray-800">
             <DialogHeader>
-              <DialogTitle className="dark:text-gray-100">Create New Bot</DialogTitle>
-              <DialogDescription className="dark:text-gray-400">
-                Create a new bot from your existing scrapes
+              <DialogTitle className="text-white">Create New Bot</DialogTitle>
+              <DialogDescription className="text-gray-300">
+                Create a new bot using your scraped data
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right dark:text-gray-300">
-                  Bot Name
-                </Label>
+              <div className="grid gap-2">
+                <Label className="text-gray-300">Bot Name</Label>
                 <Input
-                  id="name"
+                  className="bg-gray-800 border-gray-700 text-white"
+                  placeholder="Enter bot name"
                   value={newBotName}
                   onChange={(e) => setNewBotName(e.target.value)}
-                  placeholder="My Awesome Bot"
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="scrape" className="text-right dark:text-gray-300">
-                  Select Scrape
-                </Label>
+              <div className="grid gap-2">
+                <Label className="text-gray-300">Select Scrape</Label>
                 <Select value={selectedScrape} onValueChange={setSelectedScrape}>
-                  <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                     <SelectValue placeholder="Select a scrape" />
                   </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  <SelectContent className="bg-gray-900 border-gray-800">
                     {scrapes.map((scrape) => (
                       <SelectItem
                         key={scrape._id}
                         value={scrape._id}
-                        className="dark:text-gray-100 dark:focus:bg-gray-700"
+                        className="text-gray-300 hover:bg-gray-800"
                       >
-                        {scrape.name || scrape.url || `Scrape ${new Date(scrape.createdAt).toLocaleDateString()}`}
+                        {scrape.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -318,22 +307,12 @@ export default function BotsPage() {
             </div>
             <DialogFooter>
               <Button
-                type="button"
+                type="submit"
+                className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
                 onClick={handleCreateBot}
                 disabled={isCreating}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
               >
-                {isCreating ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Create Bot
-                  </>
-                )}
+                {isCreating ? "Creating..." : "Create Bot"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -341,119 +320,85 @@ export default function BotsPage() {
       </div>
 
       <div className="mb-6">
-        <Tabs defaultValue="all" className="w-full">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <TabsList className="dark:bg-gray-800">
-              <TabsTrigger
-                value="all"
-                className="dark:data-[state=active]:bg-gray-700 dark:text-gray-300 dark:data-[state=active]:text-white"
-              >
-                All Bots
-              </TabsTrigger>
-              <TabsTrigger
-                value="active"
-                className="dark:data-[state=active]:bg-gray-700 dark:text-gray-300 dark:data-[state=active]:text-white"
-              >
-                Active
-              </TabsTrigger>
-              <TabsTrigger
-                value="pending"
-                className="dark:data-[state=active]:bg-gray-700 dark:text-gray-300 dark:data-[state=active]:text-white"
-              >
-                Training
-              </TabsTrigger>
-              <TabsTrigger
-                value="failed"
-                className="dark:data-[state=active]:bg-gray-700 dark:text-gray-300 dark:data-[state=active]:text-white"
-              >
-                Failed
-              </TabsTrigger>
-            </TabsList>
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground dark:text-gray-400" />
-              <Input
-                type="search"
-                placeholder="Search bots..."
-                className="w-full sm:w-[250px] pl-8 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <TabsContent value="all" className="mt-0">
-            {filteredBots.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-800">
-                <Bot className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                <h3 className="text-lg font-medium dark:text-gray-300 mb-1">No bots found</h3>
-                <p className="text-muted-foreground dark:text-gray-500 max-w-md mx-auto">
-                  Create your first bot to get started with AI-powered conversations
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredBots.map((bot) => (
-                  <BotCard key={bot._id} bot={bot} onCheckStatus={handleCheckStatus} refreshLoading={refreshLoading} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="active" className="mt-0">
-            {activeBots.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-800">
-                <Check className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                <h3 className="text-lg font-medium dark:text-gray-300 mb-1">No active bots found</h3>
-                <p className="text-muted-foreground dark:text-gray-500 max-w-md mx-auto">
-                  Your active bots will appear here once training is complete
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {activeBots.map((bot) => (
-                  <BotCard key={bot._id} bot={bot} onCheckStatus={handleCheckStatus} refreshLoading={refreshLoading} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pending" className="mt-0">
-            {pendingBots.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-800">
-                <Clock className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                <h3 className="text-lg font-medium dark:text-gray-300 mb-1">No bots in training</h3>
-                <p className="text-muted-foreground dark:text-gray-500 max-w-md mx-auto">
-                  Bots that are currently being trained will appear here
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {pendingBots.map((bot) => (
-                  <BotCard key={bot._id} bot={bot} onCheckStatus={handleCheckStatus} refreshLoading={refreshLoading} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="failed" className="mt-0">
-            {failedBots.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-800">
-                <X className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                <h3 className="text-lg font-medium dark:text-gray-300 mb-1">No failed bots</h3>
-                <p className="text-muted-foreground dark:text-gray-500 max-w-md mx-auto">
-                  Bots that failed during training will appear here
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {failedBots.map((bot) => (
-                  <BotCard key={bot._id} bot={bot} onCheckStatus={handleCheckStatus} refreshLoading={refreshLoading} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            className="pl-10 bg-gray-800 border-gray-700 text-white"
+            placeholder="Search bots..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
+
+      <Tabs defaultValue="all" className="space-y-4">
+        <TabsList className="bg-gray-800 border-gray-700">
+          <TabsTrigger value="all" className="text-gray-300 data-[state=active]:text-white">
+            All Bots
+          </TabsTrigger>
+          <TabsTrigger value="active" className="text-gray-300 data-[state=active]:text-white">
+            Active
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="text-gray-300 data-[state=active]:text-white">
+            Pending
+          </TabsTrigger>
+          <TabsTrigger value="failed" className="text-gray-300 data-[state=active]:text-white">
+            Failed
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredBots.map((bot) => (
+              <BotCard
+                key={bot._id}
+                bot={bot}
+                onCheckStatus={handleCheckStatus}
+                refreshLoading={refreshLoading}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="active" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {activeBots.map((bot) => (
+              <BotCard
+                key={bot._id}
+                bot={bot}
+                onCheckStatus={handleCheckStatus}
+                refreshLoading={refreshLoading}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pending" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {pendingBots.map((bot) => (
+              <BotCard
+                key={bot._id}
+                bot={bot}
+                onCheckStatus={handleCheckStatus}
+                refreshLoading={refreshLoading}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="failed" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {failedBots.map((bot) => (
+              <BotCard
+                key={bot._id}
+                bot={bot}
+                onCheckStatus={handleCheckStatus}
+                refreshLoading={refreshLoading}
+              />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -467,37 +412,29 @@ function BotCard({
   onCheckStatus: (id: string) => void
   refreshLoading: boolean
 }) {
-  const { toast } = useToast()
   const router = useRouter()
+  const { toast } = useToast()
 
   const getStatusBadge = () => {
     switch (bot.trainingStatus) {
       case "completed":
         return (
-          <div className="flex items-center gap-2">
-            <Badge variant="default" className={`flex items-center gap-1 ${bot.isActive ? "bg-green-600 hover:bg-green-700" : "bg-gray-500 hover:bg-gray-600"}`}>
-              <Check className="h-3 w-3" />
-              {bot.isActive ? "Active" : "Inactive"}
-            </Badge>
-            {bot.isPublic && (
-              <Badge variant="outline" className="flex items-center gap-1 border-blue-500 text-blue-500">
-                <Globe className="h-3 w-3" />
-                Public
-              </Badge>
-            )}
-          </div>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/20">
+            <Check className="h-3 w-3 mr-1" />
+            Active
+          </Badge>
         )
       case "pending":
         return (
-          <Badge variant="default" className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600">
-            <Clock className="h-3 w-3" />
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/20">
+            <Clock className="h-3 w-3 mr-1" />
             Training
           </Badge>
         )
       case "failed":
         return (
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <X className="h-3 w-3" />
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/20">
+            <X className="h-3 w-3 mr-1" />
             Failed
           </Badge>
         )
@@ -508,7 +445,7 @@ function BotCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/bot/${bot._id}`, {
+      const response = await fetch(`${serverURL}/bot/${bot._id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -520,10 +457,9 @@ function BotCard({
           title: "Success",
           description: "Bot deleted successfully",
         })
-        // You might want to refresh the bots list here
+        router.refresh()
       } else {
-        const data = await response.json()
-        throw new Error(data.message || "Failed to delete bot")
+        throw new Error("Failed to delete bot")
       }
     } catch (error) {
       toast({
@@ -535,119 +471,97 @@ function BotCard({
   }
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md dark:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full text-white">
-              <Bot className="h-5 w-5" />
-            </div>
+    <Card className="bg-gray-900 border-gray-800">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="dark:text-gray-100">{bot.name}</CardTitle>
-              {bot.description && (
-                <CardDescription className="mt-1 dark:text-gray-400">{bot.description}</CardDescription>
-              )}
+              <CardTitle className="text-white">{bot.name}</CardTitle>
+              <CardDescription className="text-gray-400">
+                {bot.description || "No description"}
+              </CardDescription>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800"
-              >
+              <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
-              <DropdownMenuLabel className="dark:text-gray-300">Actions</DropdownMenuLabel>
+            <DropdownMenuContent className="bg-gray-900 border-gray-800">
+              <DropdownMenuLabel className="text-white">Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-800" />
               <DropdownMenuItem
-                onClick={() => router.push(`/bots/${bot._id}/edit`)}
-                className="dark:text-gray-300 dark:focus:bg-gray-800 cursor-pointer"
+                className="text-gray-300 hover:bg-white hover:text-black"
+                onClick={() => router.push(`/bots/${bot._id}`)}
               >
-                Edit Bot
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
               </DropdownMenuItem>
-              <DropdownMenuItem className="dark:text-gray-300 dark:focus:bg-gray-800 cursor-pointer">
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="dark:bg-gray-800" />
               <DropdownMenuItem
-                className="text-red-500 dark:text-red-400 dark:focus:bg-gray-800 cursor-pointer"
+                className="text-gray-300 hover:bg-white hover:text-black"
+                onClick={() => router.push(`/conversations?botId=${bot._id}`)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-gray-300 hover:bg-white hover:text-black"
+                onClick={() => router.push(`/bot-analytics/${bot._id}`)}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-gray-800" />
+              <DropdownMenuItem
+                className="text-red-400 hover:bg-white hover:text-red-600"
                 onClick={handleDelete}
               >
-                Delete Bot
+                <X className="h-4 w-4 mr-2" />
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground dark:text-gray-500 mb-1">Status</span>
-            {getStatusBadge()}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground dark:text-gray-500 mb-1">Created</span>
-            <span className="text-sm dark:text-gray-300">{new Date(bot.createdAt).toLocaleDateString()}</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onCheckStatus(bot._id)}
-            disabled={refreshLoading || bot.trainingStatus === "completed"}
-            className="dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 dark:disabled:text-gray-700"
-          >
-            {refreshLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {getStatusBadge()}
+          {bot.isPublic && (
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/20">
+              <Globe className="h-3 w-3 mr-1" />
+              Public
+            </Badge>
+          )}
+          {bot.isActive && (
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/20">
+              <Zap className="h-3 w-3 mr-1" />
+              Active
+            </Badge>
+          )}
         </div>
       </CardContent>
-      <CardFooter className="flex gap-2 border-t dark:border-gray-800 pt-4">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-700"
-                  onClick={() => router.push(`/bots/${bot._id}/chat`)}
-                  disabled={bot.trainingStatus !== "completed" || !bot.isActive}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  Chat
-                </Button>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {bot.trainingStatus !== "completed" 
-                ? "Bot is still training" 
-                : !bot.isActive 
-                  ? "Bot is inactive. Enable it in settings to chat." 
-                  : "Chat with this bot"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <CardFooter className="flex gap-2">
         <Button
           variant="outline"
-          size="sm"
-          className="flex-1 gap-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-700"
-          onClick={() => router.push(`/bots/${bot._id}/analytics`)}
-          disabled={bot.trainingStatus !== "completed"}
+          className="flex-1 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+          onClick={() => router.push(`/conversations?botId=${bot._id}`)}
         >
-          <BarChart3 className="h-4 w-4" />
-          Analytics
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Chat
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-          onClick={() => router.push(`/bots/${bot._id}/settings`)}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </Button>
+        {bot.trainingStatus === "pending" && (
+          <Button
+            variant="outline"
+            className="flex-1 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+            onClick={() => onCheckStatus(bot._id)}
+            disabled={refreshLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshLoading ? "animate-spin" : ""}`} />
+            Check Status
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

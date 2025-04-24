@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
+import { TrashIcon, PlayIcon, DownloadIcon } from "lucide-react";
 
 interface ScraperSchedule {
   _id: string;
@@ -214,214 +215,240 @@ export default function AutoScraperPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Tabs defaultValue="schedules">
-        <TabsList>
-          <TabsTrigger value="schedules">Schedules</TabsTrigger>
-          <TabsTrigger value="create">Create Schedule</TabsTrigger>
-        </TabsList>
-        <TabsContent value="schedules">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Scraper Schedules</CardTitle>
-            </CardHeader>
-            <CardContent>
+    <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
+      <h1 className="text-3xl font-bold mb-8 text-white">Auto Scraper</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Create New Schedule */}
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Create New Schedule</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-gray-300">Schedule Name</Label>
+              <Input
+                id="name"
+                value={newSchedule.name}
+                onChange={(e) => setNewSchedule({ ...newSchedule, name: e.target.value })}
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                placeholder="Enter schedule name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="url" className="text-gray-300">URL to Scrape</Label>
+              <Input
+                id="url"
+                value={newSchedule.url}
+                onChange={(e) => setNewSchedule({ ...newSchedule, url: e.target.value })}
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                placeholder="Enter URL"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-300">Schedule Type</Label>
+              <Select
+                value={newSchedule.schedule}
+                onValueChange={(value) => setNewSchedule({ ...newSchedule, schedule: value })}
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select schedule type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-800">
+                  <SelectItem value="daily" className="text-gray-300 hover:bg-gray-800">Daily</SelectItem>
+                  <SelectItem value="weekly" className="text-gray-300 hover:bg-gray-800">Weekly</SelectItem>
+                  <SelectItem value="monthly" className="text-gray-300 hover:bg-gray-800">Monthly</SelectItem>
+                  <SelectItem value="custom" className="text-gray-300 hover:bg-gray-800">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newSchedule.schedule === "custom" && (
+              <div className="space-y-2">
+                <Label htmlFor="customSchedule" className="text-gray-300">Custom Schedule (Cron Expression)</Label>
+                <Input
+                  id="customSchedule"
+                  value={newSchedule.customSchedule}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, customSchedule: e.target.value })}
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                  placeholder="Enter cron expression"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label className="text-gray-300">Next Run</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-800">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                      className="bg-gray-900 text-white"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleCreateSchedule}
+              disabled={loading}
+              className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+            >
+              {loading ? "Creating..." : "Create Schedule"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Schedules List */}
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Your Schedules</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px]">
               <div className="space-y-4">
                 {schedules.map((schedule) => (
-                  <Card key={schedule._id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{schedule.name}</h3>
-                          <p className="text-sm text-muted-foreground">{schedule.url}</p>
-                          <p className="text-sm">
-                            Schedule: {schedule.schedule}
-                            {schedule.customSchedule && ` (${schedule.customSchedule})`}
-                          </p>
-                          <p className="text-sm">
-                            Next Run: {format(new Date(schedule.nextRun), "PPP p")}
-                          </p>
-                          {schedule.lastRun && (
-                            <p className="text-sm">
-                              Last Run: {format(new Date(schedule.lastRun), "PPP p")}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExecuteScraping(schedule._id)}
-                            disabled={executing === schedule._id}
-                          >
-                            {executing === schedule._id ? "Executing..." : "Execute Now"}
-                          </Button>
-                          <Switch
-                            checked={schedule.isActive}
-                            onCheckedChange={() => handleToggleSchedule(schedule._id)}
-                            className={cn(
-                              schedule.isActive ? "bg-green-500" : "bg-red-500"
-                            )}
-                          />
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteSchedule(schedule._id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                  <div
+                    key={schedule._id}
+                    className="p-4 border border-gray-800 rounded-lg bg-gray-800"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-white">{schedule.name}</h3>
+                        <p className="text-sm text-gray-400">{schedule.url}</p>
+                        <p className="text-sm text-gray-400">
+                          Next run: {new Date(schedule.nextRun).toLocaleString()}
+                        </p>
                       </div>
-                      <Button
-                        variant="link"
-                        className="mt-2"
-                        onClick={() => fetchScheduleDetails(schedule._id)}
-                      >
-                        View Scraping History
-                      </Button>
-                    </CardContent>
-                  </Card>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={schedule.isActive}
+                          onCheckedChange={() => handleToggleSchedule(schedule._id)}
+                          className={schedule.isActive ? "bg-green-500" : "bg-red-500"}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteSchedule(schedule._id)}
+                          className="text-gray-300 hover:text-red-500 hover:bg-gray-700"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleExecuteScraping(schedule._id)}
+                          className="text-gray-300 hover:text-green-500 hover:bg-gray-700"
+                          disabled={!!executing}
+                        >
+                          <PlayIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
 
-          {selectedSchedule && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Scraping History for {selectedSchedule.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
+      {/* Selected Schedule Details */}
+      {selectedSchedule && (
+        <Card className="mt-8 bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Schedule Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="scrapes" className="w-full">
+              <TabsList className="bg-gray-800 border-gray-700">
+                <TabsTrigger value="scrapes" className="text-gray-300 data-[state=active]:text-white">
+                  Scrapes
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="text-gray-300 data-[state=active]:text-white">
+                  Settings
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="scrapes">
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-4">
                     {scrapes.map((scrape) => (
-                      <Card key={scrape._id}>
-                        <CardContent className="p-4">
+                      <div
+                        key={scrape._id}
+                        className="p-4 border border-gray-800 rounded-lg bg-gray-800"
+                      >
+                        <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-semibold">{scrape.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Created: {format(new Date(scrape.createdAt), "PPP p")}
+                            <h3 className="font-medium text-white">{scrape.name}</h3>
+                            <p className="text-sm text-gray-400">
+                              Created: {new Date(scrape.createdAt).toLocaleString()}
                             </p>
-                            <p className="text-sm">URL: {scrape.url}</p>
-                            <p className="text-sm">QA Pairs: {scrape.qaPairs.length}</p>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              onClick={() => window.open(scrape.s3FileUrl, "_blank")}
-                            >
-                              View Results
-                            </Button>
                           </div>
-                        </CardContent>
-                      </Card>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(scrape.s3FileUrl, '_blank')}
+                            className="text-gray-300 hover:text-white hover:bg-gray-700"
+                          >
+                            <DownloadIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-        <TabsContent value="create">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Scraper Schedule</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={newSchedule.name}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, name: e.target.value })}
-                  placeholder="Enter schedule name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="url">URL</Label>
-                <Input
-                  id="url"
-                  value={newSchedule.url}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, url: e.target.value })}
-                  placeholder="Enter URL to scrape"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="schedule">Schedule</Label>
-                <Select
-                  value={newSchedule.schedule}
-                  onValueChange={(value) => setNewSchedule({ ...newSchedule, schedule: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select schedule" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800">
-                    <SelectItem value="daily" className="hover:bg-gray-100 dark:hover:bg-gray-700">Daily</SelectItem>
-                    <SelectItem value="weekly" className="hover:bg-gray-100 dark:hover:bg-gray-700">Weekly</SelectItem>
-                    <SelectItem value="monthly" className="hover:bg-gray-100 dark:hover:bg-gray-700">Monthly</SelectItem>
-                    <SelectItem value="custom" className="hover:bg-gray-100 dark:hover:bg-gray-700">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {newSchedule.schedule === "custom" && (
-                <div className="space-y-2">
-                  <Label htmlFor="customSchedule">Custom Schedule (Cron Expression)</Label>
-                  <Input
-                    id="customSchedule"
-                    value={newSchedule.customSchedule}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, customSchedule: e.target.value })}
-                    placeholder="Enter cron expression (e.g., 0 0 * * *)"
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label>Next Run</Label>
-                <div className="flex flex-col space-y-4">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[280px] justify-start text-left font-normal bg-white dark:bg-gray-800",
-                          !selectedDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "MMMM d, yyyy") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        initialFocus
-                        className="rounded-md border shadow-md bg-white dark:bg-gray-800"
-                        weekStartsOn={1}
-                        formatters={{
-                          formatWeekdayName: () => ""
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="time">Time:</Label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="w-32"
-                    />
+              </TabsContent>
+              <TabsContent value="settings">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-gray-300">Schedule Type</Label>
+                    <p className="text-sm text-gray-400">{selectedSchedule.schedule}</p>
+                  </div>
+                  {selectedSchedule.customSchedule && (
+                    <div className="space-y-2">
+                      <Label className="text-gray-300">Custom Schedule</Label>
+                      <p className="text-sm text-gray-400">{selectedSchedule.customSchedule}</p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-gray-300">Next Run</Label>
+                    <p className="text-sm text-gray-400">
+                      {new Date(selectedSchedule.nextRun).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-300">Last Run</Label>
+                    <p className="text-sm text-gray-400">
+                      {selectedSchedule.lastRun
+                        ? new Date(selectedSchedule.lastRun).toLocaleString()
+                        : "Never"}
+                    </p>
                   </div>
                 </div>
-              </div>
-              <Button onClick={handleCreateSchedule} disabled={loading} className="text-black">
-                {loading ? "Creating..." : "Create Schedule"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
