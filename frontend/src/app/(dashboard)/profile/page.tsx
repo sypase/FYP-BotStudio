@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { serverURL } from '@/utils/utils';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CreditCard } from 'lucide-react';
 
 interface UserProfile {
   name: string;
@@ -140,43 +141,47 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return <div className="flex justify-center items-center min-h-screen dark:bg-gray-950 text-white">Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 bg-gray-900 border-gray-800">
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>Your account information</CardDescription>
+            <CardTitle className="text-white">Profile</CardTitle>
+            <CardDescription className="text-gray-400">Your account information</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium">Name</h3>
-                <p>{user?.name}</p>
+                <h3 className="text-lg font-medium text-white">Name</h3>
+                <p className="text-gray-300">{user?.name}</p>
               </div>
               <div>
-                <h3 className="text-lg font-medium">Email</h3>
-                <p>{user?.email}</p>
+                <h3 className="text-lg font-medium text-white">Email</h3>
+                <p className="text-gray-300">{user?.email}</p>
               </div>
               <div>
-                <h3 className="text-lg font-medium">Account Type</h3>
-                <p className="capitalize">{user?.type}</p>
+                <h3 className="text-lg font-medium text-white">Account Type</h3>
+                <p className="capitalize text-gray-300">{user?.type}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
-            <CardTitle>Credits</CardTitle>
-            <CardDescription>Your available credits</CardDescription>
+            <CardTitle className="text-white">Credits</CardTitle>
+            <CardDescription className="text-gray-400">Your available credits</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold mb-4 text-white">{credits}</div>
-            <Button onClick={handleAddCredits} className="w-full text-black">
+            <Button 
+              onClick={handleAddCredits} 
+              className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
               Add Credits
             </Button>
           </CardContent>
@@ -184,15 +189,25 @@ export default function ProfilePage() {
       </div>
 
       <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="analytics">Bot Analytics</TabsTrigger>
-          <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-gray-900 border-gray-800">
+          <TabsTrigger 
+            value="analytics" 
+            className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-800"
+          >
+            Bot Analytics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="transactions" 
+            className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-800"
+          >
+            Recent Transactions
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="analytics">
-          <Card>
+          <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle>Bot Interactions</CardTitle>
-              <CardDescription>Number of interactions per bot</CardDescription>
+              <CardTitle className="text-white">Bot Interactions</CardTitle>
+              <CardDescription className="text-gray-400">Number of interactions per bot</CardDescription>
             </CardHeader>
             <CardContent>
               {botInteractions.length > 0 ? (
@@ -207,53 +222,59 @@ export default function ProfilePage() {
                         bottom: 5,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="botName" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#8884d8" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="botName" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #374151',
+                          color: '#F3F4F6'
+                        }}
+                      />
+                      <Bar dataKey="count" fill="#6366F1" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p>No bot interactions yet</p>
+                <p className="text-gray-400">No bot interactions yet</p>
               )}
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="transactions">
-          <Card>
+          <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>Your recent bot interactions</CardDescription>
+              <CardTitle className="text-white">Recent Transactions</CardTitle>
+              <CardDescription className="text-gray-400">Your recent bot interactions</CardDescription>
             </CardHeader>
             <CardContent>
               {recentTransactions.length > 0 ? (
                 <div className="space-y-4">
                   {recentTransactions.map((transaction) => (
-                    <Card key={transaction._id}>
+                    <Card key={transaction._id} className="bg-gray-800 border-gray-700">
                       <CardHeader>
                         <div className="flex justify-between">
-                          <CardTitle className="text-lg">{transaction.botName}</CardTitle>
+                          <CardTitle className="text-lg text-white">{transaction.botName}</CardTitle>
                           <span className={`text-sm ${
-                            transaction.status === 'success' ? 'text-green-500' : 'text-red-500'
+                            transaction.status === 'success' ? 'text-green-400' : 'text-red-400'
                           }`}>
                             {transaction.status}
                           </span>
                         </div>
-                        <CardDescription>
+                        <CardDescription className="text-gray-400">
                           {new Date(transaction.createdAt).toLocaleString()}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
                           <div>
-                            <h4 className="font-medium">Input:</h4>
-                            <p className="text-sm">{transaction.input}</p>
+                            <h4 className="text-sm font-medium text-white">Input:</h4>
+                            <p className="text-sm text-gray-300">{transaction.input}</p>
                           </div>
                           <div>
-                            <h4 className="font-medium">Response:</h4>
-                            <p className="text-sm">{transaction.response}</p>
+                            <h4 className="text-sm font-medium text-white">Response:</h4>
+                            <p className="text-sm text-gray-300">{transaction.response}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -261,7 +282,7 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p>No recent transactions</p>
+                <p className="text-gray-400">No recent transactions</p>
               )}
             </CardContent>
           </Card>

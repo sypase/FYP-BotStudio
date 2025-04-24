@@ -165,10 +165,8 @@ export default function AppSidebar() {
 
   return (
     <>
-      <Sidebar className="dark">
-        {" "}
-        {/* Apply dark styles */}
-        <SidebarHeader className="border-b">
+      <Sidebar className="dark bg-gray-900">
+        <SidebarHeader className="border-b border-gray-800">
           <div className="flex items-center px-2 py-3">
             <Link href="/" className="flex items-center gap-2">
               <Bot className="h-6 w-6 text-primary" />
@@ -180,7 +178,7 @@ export default function AppSidebar() {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Main</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-gray-400">Main</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {mainNavItems.map((item) => (
@@ -189,6 +187,7 @@ export default function AppSidebar() {
                       asChild
                       isActive={isActive(item.href)}
                       tooltip={item.title}
+                      className="text-gray-300 hover:text-white"
                     >
                       <Link href={item.href}>
                         <item.icon className="h-5 w-5" />
@@ -201,28 +200,23 @@ export default function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t p-4">
+        <SidebarFooter className="border-t border-gray-800 p-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-100">
-                {" "}
-                {/* Use text-gray-100 for dark theme */}
+              <span className="text-sm font-medium text-white">
                 Hello, {user.name}
               </span>
               <span className="text-sm text-gray-400">
-                {" "}
-                {/* Use text-gray-400 for dark theme */}
                 {user.email}
               </span>
               <span className="text-sm text-primary font-medium mt-1">
                 Credits: {credits}
               </span>
             </div>
-            {/* Removed the theme switch button */}
             <Button
               variant="outline"
               size="sm"
-              className="justify-start gap-2 hover:text-black"
+              className="justify-start gap-2 text-gray-300 hover:text-white hover:bg-gray-800"
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />

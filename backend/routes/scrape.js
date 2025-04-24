@@ -6,6 +6,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import Scrape from "../models/Scrape.js";
 import { validate } from "../middlewares/validate.js";
@@ -13,6 +14,9 @@ import pkg from "uuid";
 import multer from "multer";
 import csv from "csv-parser";
 import { Readable } from "stream";
+import { uploadToS3, getS3FileUrl } from "../utils/s3.js";
+import { scrapeWebsite } from "../utils/scraper.js";
+import { parseCSV } from "../utils/csvParser.js";
 const { v4: uuidv4 } = pkg;
 
 const router = express.Router();
@@ -107,38 +111,6 @@ async function generateQAPairs(content) {
     console.error("Error generating QA pairs:", error);
     return [];
   }
-}
-
-async function parseCSV(buffer) {
-  return new Promise((resolve, reject) => {
-    const qaPairs = [];
-    const stream = Readable.from(buffer.toString());
-
-    stream
-      .pipe(csv())
-      .on("data", (row) => {
-        // Handle different CSV formats (question/answer or Q/A)
-        const question = row.question || row.Question || row.Q;
-        const answer = row.answer || row.Answer || row.A;
-
-        if (question && answer) {
-          qaPairs.push({
-            question: question.trim(),
-            answer: answer.trim(),
-          });
-        }
-      })
-      .on("end", () => {
-        if (qaPairs.length === 0) {
-          reject(new Error("No valid Q&A pairs found in CSV"));
-        } else {
-          resolve(qaPairs);
-        }
-      })
-      .on("error", (error) => {
-        reject(error);
-      });
-  });
 }
 
 async function saveToS3(qaPairs, filename = null) {
@@ -584,4 +556,39 @@ router.post(
     }
   }
 );
+
+// Download scrape file
+router.get('/download/:id', validate, async (req, res) => {
+  try {
+    const scrape = await Scrape.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id
+    });
+
+    if (!scrape) {
+      return res.status(404).json({ message: 'Scrape not found' });
+    }
+
+    if (!scrape.s3FileName) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+      Key: scrape.s3FileName,
+    });
+
+    const response = await s3Client.send(command);
+    const fileStream = response.Body;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=${scrape.s3FileName}`);
+    
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    res.status(500).json({ error: 'Error downloading file' });
+  }
+});
+
 export default router;

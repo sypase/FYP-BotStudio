@@ -71,4 +71,38 @@ router.get("/:id", validate, async (req, res) => {
   }
 });
 
+// Get bot interaction stats for all bots
+router.get("/stats", validate, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all bot transactions for the user
+    const transactions = await BotTransaction.find({ ownerId: userId })
+      .populate('botId', 'name')
+      .sort({ createdAt: -1 });
+
+    // Group interactions by bot
+    const botInteractions = {};
+    transactions.forEach(transaction => {
+      const botId = transaction.botId._id.toString();
+      if (!botInteractions[botId]) {
+        botInteractions[botId] = {
+          botId,
+          botName: transaction.botId.name,
+          count: 0
+        };
+      }
+      botInteractions[botId].count++;
+    });
+
+    // Convert to array and sort by count
+    const interactions = Object.values(botInteractions).sort((a, b) => b.count - a.count);
+
+    res.json({ interactions });
+  } catch (error) {
+    console.error("Error fetching bot interaction stats:", error);
+    res.status(500).json({ error: "Failed to fetch bot interaction stats" });
+  }
+});
+
 export default router; 

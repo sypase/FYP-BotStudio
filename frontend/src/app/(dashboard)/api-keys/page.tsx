@@ -147,12 +147,12 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">API Keys</h1>
+    <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
+      <h1 className="text-3xl font-bold mb-8 text-white">API Keys</h1>
       
-      <Card className="mb-8">
+      <Card className="mb-8 bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Generate New API Key</CardTitle>
+          <CardTitle className="text-white">Generate New API Key</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -160,40 +160,45 @@ export default function ApiKeysPage() {
               placeholder="Enter API key name"
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
             />
-            <Button onClick={generateApiKey} disabled={isGenerating}>
+            <Button 
+              onClick={generateApiKey} 
+              disabled={isGenerating}
+              className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+            >
               {isGenerating ? 'Generating...' : 'Generate'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Your API Keys</CardTitle>
+          <CardTitle className="text-white">Your API Keys</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-gray-500">Loading API keys...</p>
+            <p className="text-gray-400">Loading API keys...</p>
           ) : apiKeys.length === 0 ? (
-            <p className="text-gray-500">No API keys found</p>
+            <p className="text-gray-400">No API keys found</p>
           ) : (
             <div className="space-y-4">
               {apiKeys.map((key) => (
                 <div
                   key={key._id}
-                  className="flex flex-col p-4 border rounded-lg space-y-4"
+                  className="flex flex-col p-4 border border-gray-800 rounded-lg space-y-4 bg-gray-800"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{key.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium text-white">{key.name}</h3>
+                      <p className="text-sm text-gray-400">
                         Created: {new Date(key.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm">Active</span>
+                        <span className="text-sm text-gray-300">Active</span>
                         <Switch
                           checked={key.isActive}
                           onCheckedChange={() => toggleApiKey(key._id, key.isActive)}
@@ -204,21 +209,23 @@ export default function ApiKeysPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => copyToClipboard(key.key)}
+                        className="text-gray-300 hover:text-white hover:bg-gray-700"
                       >
                         <CopyIcon className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="icon"
                         onClick={() => deleteApiKey(key._id)}
+                        className="text-gray-300 hover:text-red-500 hover:bg-gray-700"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm bg-gray-100 p-2 rounded flex-1 text-black">
-                        {key.key}
+                    <code className="text-sm bg-gray-900 text-gray-300 p-2 rounded flex-1">
+                      {key.key}
                     </code>
                   </div>
                 </div>

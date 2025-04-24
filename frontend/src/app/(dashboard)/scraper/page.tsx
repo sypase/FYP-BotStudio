@@ -88,17 +88,17 @@ const CustomAccordion: React.FC<{
   return (
     <div>
       {qaPairs.map((pair, index) => (
-        <div key={index} className="border-b border-gray-200">
+        <div key={index} className="border-b border-gray-800">
           <div className="w-full flex items-center justify-between p-4">
             <button 
               className="flex-1 text-left flex items-center justify-between"
               onClick={() => toggleAccordion(index)}
             >
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="mr-2">
+                <Badge variant="outline" className="mr-2 bg-gray-800 text-gray-300 border-gray-700">
                   Q{index + 1}
                 </Badge>
-                {pair.question}
+                <span className="text-white">{pair.question}</span>
               </div>
             </button>
             <div className="flex gap-2 ml-4">
@@ -106,6 +106,7 @@ const CustomAccordion: React.FC<{
                 variant="ghost" 
                 size="icon" 
                 onClick={() => startEditing(index)}
+                className="text-gray-300 hover:text-white hover:bg-gray-700"
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -113,14 +114,15 @@ const CustomAccordion: React.FC<{
                 variant="ghost" 
                 size="icon" 
                 onClick={() => onDeletePair(index)}
+                className="text-gray-300 hover:text-red-500 hover:bg-gray-700"
               >
-                <Trash2 className="h-4 w-4 text-red-500" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
           
           {activeIndex === index && (
-            <div className="p-4 bg-gray-50 text-black">
+            <div className="p-4 bg-gray-800 text-gray-300">
               <p>{pair.answer}</p>
             </div>
           )}
@@ -129,39 +131,43 @@ const CustomAccordion: React.FC<{
 
       {/* Edit Dialog */}
       <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
-        <DialogContent>
+        <DialogContent className="bg-gray-900 border-gray-800">
           <DialogHeader>
-            <DialogTitle>Edit Q&A Pair</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Edit Q&A Pair</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Make changes to this question and answer pair.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="question" className="text-right">
+              <Label htmlFor="question" className="text-right text-gray-300">
                 Question
               </Label>
               <Textarea
                 id="question"
                 value={editedPair.question}
                 onChange={(e) => setEditedPair({...editedPair, question: e.target.value})}
-                className="col-span-3"
+                className="col-span-3 bg-gray-800 border-gray-700 text-white"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="answer" className="text-right">
+              <Label htmlFor="answer" className="text-right text-gray-300">
                 Answer
               </Label>
               <Textarea
                 id="answer"
                 value={editedPair.answer}
                 onChange={(e) => setEditedPair({...editedPair, answer: e.target.value})}
-                className="col-span-3"
+                className="col-span-3 bg-gray-800 border-gray-700 text-white"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={saveEdit}>
+            <Button 
+              type="button" 
+              onClick={saveEdit}
+              className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+            >
               Save changes
             </Button>
           </DialogFooter>
@@ -188,39 +194,43 @@ const AddQAPairDialog: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="bg-gray-900 border-gray-800">
         <DialogHeader>
-          <DialogTitle>Add New Q&A Pair</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white">Add New Q&A Pair</DialogTitle>
+          <DialogDescription className="text-gray-400">
             Create a new question and answer pair for this scrape.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="new-question" className="text-right">
+            <Label htmlFor="new-question" className="text-right text-gray-300">
               Question
             </Label>
             <Textarea
               id="new-question"
               value={newPair.question}
               onChange={(e) => setNewPair({...newPair, question: e.target.value})}
-              className="col-span-3"
+              className="col-span-3 bg-gray-800 border-gray-700 text-white"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="new-answer" className="text-right">
+            <Label htmlFor="new-answer" className="text-right text-gray-300">
               Answer
             </Label>
             <Textarea
               id="new-answer"
               value={newPair.answer}
               onChange={(e) => setNewPair({...newPair, answer: e.target.value})}
-              className="col-span-3"
+              className="col-span-3 bg-gray-800 border-gray-700 text-white"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" onClick={handleAdd}>
+          <Button 
+            type="button" 
+            onClick={handleAdd}
+            className="bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+          >
             Add Pair
           </Button>
         </DialogFooter>
@@ -233,82 +243,34 @@ const CSVUploader: React.FC<{
   onUpload: (file: File, name?: string) => void
   loading: boolean
 }> = ({ onUpload, loading }) => {
-  const [fileError, setFileError] = useState<string | null>(null)
-  const [name, setName] = useState('')
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFileError(null)
-    const file = acceptedFiles[0]
-    
-    if (!file) {
-      setFileError('No file selected')
-      return
+    if (acceptedFiles.length > 0) {
+      onUpload(acceptedFiles[0])
     }
-
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      setFileError('Only CSV files are allowed')
-      return
-    }
-
-    onUpload(file, name)
-  }, [onUpload, name])
+  }, [onUpload])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'text/csv': ['.csv']
     },
-    maxFiles: 1
+    multiple: false
   })
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="scrape-name">Scrape Name (Optional)</Label>
-        <Input
-          id="scrape-name"
-          placeholder="My CSV Upload"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+    <div
+      {...getRootProps()}
+      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+        ${isDragActive ? 'border-gray-500 bg-gray-800' : 'border-gray-700 bg-gray-900'}`}
+    >
+      <input {...getInputProps()} />
+      <div className="flex flex-col items-center gap-2">
+        <FileUp className="h-8 w-8 text-gray-400" />
+        <p className="text-gray-300">
+          {isDragActive ? 'Drop the CSV file here' : 'Drag & drop a CSV file here, or click to select'}
+        </p>
+        <p className="text-sm text-gray-400">Only CSV files are supported</p>
       </div>
-
-      <div 
-        {...getRootProps()} 
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-gray-400'
-        }`}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center justify-center gap-2">
-          <FileUp className="h-8 w-8 text-gray-500" />
-          {isDragActive ? (
-            <p className="font-medium">Drop the CSV file here...</p>
-          ) : (
-            <>
-              <p className="font-medium">Drag & drop a CSV file here, or click to select</p>
-              <p className="text-sm text-muted-foreground">
-                CSV should contain 'question' and 'answer' columns
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {fileError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{fileError}</AlertDescription>
-        </Alert>
-      )}
-
-      {loading && (
-        <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Processing CSV file...</span>
-        </div>
-      )}
     </div>
   )
 }
@@ -335,6 +297,12 @@ const ScraperPage: React.FC = () => {
       setToken(localStorage.getItem('token'))
     }
   }, [])
+
+  useEffect(() => {
+    if (token) {
+      fetchHistory()
+    }
+  }, [token])
 
   const fetchHistory = async () => {
     if (!token) return
@@ -502,12 +470,6 @@ const ScraperPage: React.FC = () => {
     }
   }
 
-  useEffect(() => {
-    if (token && activeTab === 'history') {
-      fetchHistory()
-    }
-  }, [token, activeTab])
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
@@ -596,316 +558,246 @@ const ScraperPage: React.FC = () => {
     addQAPairs([newPair])
   }
 
-  return (
-    <div className="p-6">
-      <div className="flex flex-col space-y-2 mb-6">
-        <h1 className="text-3xl font-bold">Website Scraper</h1>
-        <p className="text-muted-foreground">Extract content from websites or upload CSV to generate Q&A pairs</p>
-      </div>
+  const handleDownload = async (scrapeId: string, fileName: string) => {
+    try {
+      const response = await axios.get(`${serverURL}/scrape/download/${scrapeId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob'
+      });
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="form">Create New</TabsTrigger>
-          <TabsTrigger value="results" disabled={qaPairs.length === 0}>
-            Results {qaPairs.length > 0 && `(${qaPairs.length})`}
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${fileName || 'scrape'}.json`);
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('File downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
+  return (
+    <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
+      <h1 className="text-3xl font-bold mb-8 text-white">Web Scraper</h1>
+
+      <Tabs defaultValue="website" className="w-full">
+        <TabsList className="bg-gray-900 border-gray-800">
+          <TabsTrigger value="website" className="text-gray-300 data-[state=active]:text-white">
+            <Globe className="h-4 w-4 mr-2" />
+            From Website
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <div className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              History
-            </div>
+          <TabsTrigger value="csv" className="text-gray-300 data-[state=active]:text-white">
+            <FileJson className="h-4 w-4 mr-2" />
+            From CSV
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="form" className="space-y-4">
-          <Card>
+        <TabsContent value="website">
+          <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle>Create New Q&A Pairs</CardTitle>
-              <CardDescription>Choose how you want to create Q&A pairs</CardDescription>
+              <CardTitle className="text-white">Scrape from Website</CardTitle>
+              <CardDescription className="text-gray-400">
+                Enter a website URL to scrape content and generate Q&A pairs
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs 
-                value={activeFormTab} 
-                onValueChange={setActiveFormTab}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="website">From Website</TabsTrigger>
-                  <TabsTrigger value="csv">From CSV</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="website" className="pt-4">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="scrape-name">Scrape Name (Optional)</Label>
-                      <Input
-                        id="scrape-name"
-                        placeholder="My Website Scrape"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="url">Website URL</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            type="url"
-                            id="url"
-                            placeholder="https://example.com"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            className="pl-9"
-                            required
-                          />
-                        </div>
-                        <Button type="submit" disabled={loading}>
-                          {loading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Scraping...
-                            </>
-                          ) : (
-                            "Scrape Website"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="csv" className="pt-4">
-                  <CSVUploader 
-                    onUpload={handleCSVUpload} 
-                    loading={csvLoading}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-300">Scrape Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                    placeholder="Enter a name for this scrape"
                   />
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    <p>CSV file must contain columns named "question" and "answer".</p>
-                    <p>Example format:</p>
-                    <pre className="bg-gray-100 text-black p-2 rounded mt-2">
-                      question,answer<br />
-                      "What is your return policy?","30 days"<br />
-                      "How do I contact support?","Email support@example.com"
-                    </pre>
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              {error && (
-                <Alert variant="destructive" className="mt-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {(loading || csvLoading) && (
-                <div className="space-y-3 mt-6">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
                 </div>
-              )}
+                <div className="space-y-2">
+                  <Label htmlFor="url" className="text-gray-300">Website URL</Label>
+                  <Input
+                    id="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                    placeholder="Enter website URL"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Scraping...
+                    </>
+                  ) : (
+                    'Start Scraping'
+                  )}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="results" className="space-y-4">
-          {currentScrapeId && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {fileUrl?.includes('csv') ? (
-                      <FileUp className="mr-2 h-5 w-5" />
-                    ) : (
-                      <Globe className="mr-2 h-5 w-5" />
-                    )}
-                    <Input
-                      value={name}
-                      onChange={(e) => {
-                        setName(e.target.value)
-                        updateScrape(qaPairs, e.target.value)
-                      }}
-                      className="text-lg font-bold border-none shadow-none focus-visible:ring-1"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="destructive"
-                      onClick={() => setDeleteConfirmOpen(true)}
-                      className="gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardTitle>
-                <CardDescription>
-                  {fileUrl?.includes('csv') ? 'CSV Upload' : url}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex gap-2">
-                <Button asChild variant="outline" className="gap-2">
-                  <a href={fileUrl || '#'} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4" />
-                    Download JSON File
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {qaPairs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>Generated Q&A Pairs</CardTitle>
-                    <CardDescription>
-                      {qaPairs.length} question-answer pairs generated
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setAddDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Pair
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CustomAccordion 
-                  qaPairs={qaPairs} 
-                  onEditPair={handleEditPair}
-                  onDeletePair={handleDeletePair}
-                />
-              </CardContent>
-              <CardFooter className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(qaPairs, null, 2))}
-                  className="gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy All Q&A Pairs
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="history" className="space-y-4">
-          <Card>
+        <TabsContent value="csv">
+          <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
-                Scrape History
-              </CardTitle>
-              <CardDescription>
-                View your previous website scrapes and CSV uploads
+              <CardTitle className="text-white">Upload CSV File</CardTitle>
+              <CardDescription className="text-gray-400">
+                Upload a CSV file containing Q&A pairs to create a new scrape
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {historyLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                      </div>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="csv-name" className="text-gray-300">Scrape Name</Label>
+                  <Input
+                    id="csv-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
+                    placeholder="Enter a name for this scrape"
+                  />
                 </div>
-              ) : history.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No scrape history found</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {history.map((item) => (
-                    <Card key={item._id} className="hover:bg-gray-50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">
-                                {item.name || item.url || 'CSV Upload'}
-                              </p>
-                              <Badge variant="secondary">
-                                {item.sourceType === 'csv_upload' ? 'CSV' : 'Website'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(item.createdAt), 'MMM dd, yyyy HH:mm')}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => loadScrape(item._id)}
-                            >
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              asChild
-                            >
-                              <a href={item.s3FileUrl} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </a>
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                <CSVUploader onUpload={handleCSVUpload} loading={csvLoading} />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Add Q&A Pair Dialog */}
-      <AddQAPairDialog 
-        open={addDialogOpen} 
-        onOpenChange={setAddDialogOpen} 
+      {/* Scrape Results */}
+      {currentScrapeId && (
+        <Card className="mt-8 bg-gray-900 border-gray-800">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">{name}</CardTitle>
+                <CardDescription className="text-gray-400">
+                  {url}
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => copyToClipboard(JSON.stringify(qaPairs))}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.open(fileUrl || '#', '_blank')}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setAddDialogOpen(true)}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CustomAccordion
+              qaPairs={qaPairs}
+              onEditPair={handleEditPair}
+              onDeletePair={handleDeletePair}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scrape History */}
+      <Card className="mt-8 bg-gray-900 border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white">Scrape History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="p-4 border border-gray-800 rounded-lg bg-gray-800 animate-pulse">
+                  <div className="h-4 bg-gray-700 rounded w-1/4 mb-2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No scrape history found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((item) => (
+                <div
+                  key={item._id}
+                  className="p-4 border border-gray-800 rounded-lg bg-gray-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-white">{item.name || 'Unnamed Scrape'}</h3>
+                      <p className="text-sm text-gray-400">
+                        Created: {new Date(item.createdAt).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Source: {item.sourceType === 'csv_upload' ? 'CSV Upload' : 'Website'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => loadScrape(item._id)}
+                        className="text-gray-300 hover:text-white hover:bg-gray-700"
+                      >
+                        <History className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(item._id, item.name)}
+                        className="text-gray-300 hover:text-white hover:bg-gray-700"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AddQAPairDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
         onAddPair={handleAddPair}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. This will permanently delete the scrape and all its Q&A pairs.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={deleteScrape} disabled={loading}>
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete Scrape"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

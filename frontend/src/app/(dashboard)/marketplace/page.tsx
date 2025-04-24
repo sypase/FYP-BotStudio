@@ -130,11 +130,11 @@ export default function MarketplacePage() {
   })
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex flex-col gap-4 mb-8">
-        <h1 className="text-3xl font-bold">Bot Marketplace</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold text-white">Bot Marketplace</h1>
+        <p className="text-gray-400">
           Discover and interact with public bots created by the community
         </p>
       </div>
@@ -142,12 +142,12 @@ export default function MarketplacePage() {
       {/* Search and Categories */}
       <div className="flex flex-col gap-4 mb-8">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search bots..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-gray-900 border-gray-800 text-white placeholder:text-gray-400"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -157,6 +157,9 @@ export default function MarketplacePage() {
               variant={selectedCategory === category ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory(category)}
+              className={selectedCategory === category 
+                ? "bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black" 
+                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-800 hover:text-white"}
             >
               {category}
             </Button>
@@ -167,44 +170,44 @@ export default function MarketplacePage() {
       {/* Trending Bots */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Trending Bots</h2>
+          <TrendingUp className="h-5 w-5 text-white" />
+          <h2 className="text-xl font-semibold text-white">Trending Bots</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {trendingBots.map((bot) => (
-            <Card key={bot._id} className="overflow-hidden">
+            <Card key={bot._id} className="overflow-hidden bg-gray-900 border-gray-800">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <Bot className="h-5 w-5 text-primary" />
+                    <div className="p-2 bg-gray-800 rounded-full">
+                      <Bot className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle>{bot.name}</CardTitle>
-                      <CardDescription>by {bot.owner.username}</CardDescription>
+                      <CardTitle className="text-white">{bot.name}</CardTitle>
+                      <CardDescription className="text-gray-400">by {bot.owner.username}</CardDescription>
                     </div>
                   </div>
-                  <Badge variant="secondary">{bot.category}</Badge>
+                  <Badge variant="secondary" className="bg-gray-800 text-gray-300">{bot.category}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-gray-400 mb-4">
                   {bot.description || "No description available"}
                 </p>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-1">
                     <MessageSquare className="h-4 w-4" />
                     {bot.totalInteractions}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
+                    <Star className="h-4 w-4 text-yellow-400" />
                     {bot.rating.toFixed(1)}
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
                 <Button
-                  className="w-full"
+                  className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
                   onClick={() => handleChat(bot._id)}
                   disabled={!bot.isActive}
                 >
@@ -226,71 +229,67 @@ export default function MarketplacePage() {
       {/* All Bots */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">All Bots</h2>
+          <Filter className="h-5 w-5 text-white" />
+          <h2 className="text-xl font-semibold text-white">All Bots</h2>
         </div>
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+              <Card key={i} className="overflow-hidden bg-gray-900 border-gray-800">
                 <CardHeader>
-                  <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
-                  <div className="h-4 w-1/2 bg-muted animate-pulse rounded mt-2" />
+                  <div className="h-6 w-3/4 bg-gray-800 animate-pulse rounded" />
+                  <div className="h-4 w-1/2 bg-gray-800 animate-pulse rounded mt-2" />
                 </CardHeader>
                 <CardContent>
-                  <div className="h-4 w-full bg-muted animate-pulse rounded mb-2" />
-                  <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-full bg-gray-800 animate-pulse rounded mb-2" />
+                  <div className="h-4 w-2/3 bg-gray-800 animate-pulse rounded" />
                 </CardContent>
                 <CardFooter>
-                  <div className="h-10 w-full bg-muted animate-pulse rounded" />
+                  <div className="h-10 w-full bg-gray-800 animate-pulse rounded" />
                 </CardFooter>
               </Card>
             ))}
           </div>
         ) : filteredBots.length === 0 ? (
-          <div className="text-center py-12">
-            <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-1">No bots found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search or category filters
-            </p>
+          <div className="text-center py-8">
+            <p className="text-gray-400">No bots found matching your criteria</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredBots.map((bot) => (
-              <Card key={bot._id} className="overflow-hidden">
+              <Card key={bot._id} className="overflow-hidden bg-gray-900 border-gray-800">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <Bot className="h-5 w-5 text-primary" />
+                      <div className="p-2 bg-gray-800 rounded-full">
+                        <Bot className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle>{bot.name}</CardTitle>
-                        <CardDescription>by {bot.owner.username}</CardDescription>
+                        <CardTitle className="text-white">{bot.name}</CardTitle>
+                        <CardDescription className="text-gray-400">by {bot.owner.username}</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="secondary">{bot.category}</Badge>
+                    <Badge variant="secondary" className="bg-gray-800 text-gray-300">{bot.category}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-gray-400 mb-4">
                     {bot.description || "No description available"}
                   </p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1">
                       <MessageSquare className="h-4 w-4" />
                       {bot.totalInteractions}
                     </div>
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500" />
+                      <Star className="h-4 w-4 text-yellow-400" />
                       {bot.rating.toFixed(1)}
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button
-                    className="w-full"
+                    className="w-full bg-black hover:bg-white text-white hover:text-black border border-black hover:border-black"
                     onClick={() => handleChat(bot._id)}
                     disabled={!bot.isActive}
                   >
