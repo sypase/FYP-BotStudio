@@ -13,6 +13,8 @@ import botAnalytics from "./routes/botAnalytics.js";
 import admin from "./routes/admin.js";
 import apiKeys from "./routes/apiKeys.js";
 import apiKeyInteractions from './routes/apiKeyInteractions.js';
+import scraperScheduleRoutes from './routes/scraperSchedule.js';
+import scheduler from './services/scheduler.js';
 
 dotenv.config();
 
@@ -39,6 +41,7 @@ app.use("/bot-analytics", botAnalytics);
 app.use("/admin", admin);
 app.use("/api-keys", apiKeys);
 app.use("/api-key", apiKeyInteractions);
+app.use('/api/scraper-schedules', scraperScheduleRoutes);
 
 app.get("/", (req, res) => {
   res.send("BotSTUDIO API Is running");
@@ -51,6 +54,9 @@ async function connectDB() {
       useUnifiedTopology: true,
     });
     console.log("Connected to MongoDB");
+    
+    // Initialize the scheduler after database connection
+    await scheduler.initialize();
   } catch (error) {
     console.error("Error connecting to MongoDB:", error);
     process.exit(1);
