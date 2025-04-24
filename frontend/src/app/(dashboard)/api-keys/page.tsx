@@ -197,6 +197,7 @@ export default function ApiKeysPage() {
                         <Switch
                           checked={key.isActive}
                           onCheckedChange={() => toggleApiKey(key._id, key.isActive)}
+                          className={key.isActive ? "bg-green-500" : "bg-red-500"}
                         />
                       </div>
                       <Button
@@ -216,8 +217,8 @@ export default function ApiKeysPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm bg-gray-100 p-2 rounded flex-1">
-                      {key.key}
+                    <code className="text-sm bg-gray-100 p-2 rounded flex-1 text-black">
+                        {key.key}
                     </code>
                   </div>
                 </div>
