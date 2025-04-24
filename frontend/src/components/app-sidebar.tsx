@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Bot, Home, LogOut, AudioWaveform, User, CreditCard } from "lucide-react";
+import { Bot, Home, LogOut, AudioWaveform, User, CreditCard, FileSearch, Clock, MessageSquare, Calculator, Store, Key, Settings } from "lucide-react";
 
 // Removed the useTheme import and the Sun/Moon icons
 import { Button } from "@/components/ui/button";
@@ -100,7 +100,7 @@ export default function AppSidebar() {
   const mainNavItems = [
     {
       title: "Dashboard",
-      href: "/dashboard",
+      href: "/dashboard", 
       icon: Home,
     },
     {
@@ -111,12 +111,22 @@ export default function AppSidebar() {
     {
       title: "Scrapper",
       href: "/scraper",
-      icon: AudioWaveform,
+      icon: FileSearch,
+    },
+    {
+      title: "Auto Scraper", 
+      href: "/auto-scraper",
+      icon: Clock,
     },
     {
       title: "Chat",
       href: "/conversations",
-      icon: AudioWaveform,
+      icon: MessageSquare,
+    },
+    {
+      title: "Token Counter",
+      href: "/token-counter",
+      icon: Calculator,
     },
     {
       title: "Shop",
@@ -126,7 +136,12 @@ export default function AppSidebar() {
     {
       title: "Marketplace",
       href: "/marketplace",
-      icon: AudioWaveform,
+      icon: Store,
+    },
+    {
+      title: "API Keys",
+      href: "/api-keys",
+      icon: Key,
     },
     {
       title: "Profile",
@@ -136,7 +151,7 @@ export default function AppSidebar() {
     {
       title: "Settings",
       href: "/settings",
-      icon: AudioWaveform,
+      icon: Settings,
     },
   ];
 
