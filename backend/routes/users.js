@@ -10,6 +10,7 @@ import EmailVerification from "../models/EmailVerification.js";
 import nodemailer from "nodemailer";
 import smtpTransport from "nodemailer-smtp-transport";
 import { verify } from "./google-auth.js";
+import { sendEmail, emailTemplates } from "../utils/email.js";
 
 dotenv.config();
 
@@ -34,14 +35,11 @@ router.get("/", validate, async (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  console.log("asd");
-  console.log("asdasdsadasd");
-  
   const schema = joi.object({
     name: joi.string().min(3).required(),
     email: joi.string().min(6).required().email(),
     password: joi.string().min(6).required(),
-    referralCode: joi.string().allow(null).optional(), // Optional referral code
+    referralCode: joi.string().allow(null).optional(),
   });
 
   try {
@@ -54,19 +52,24 @@ router.post("/signup", async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    console.log("asihdasd");
 
     // Create a new user
     const newUser = new User({
       name: data.name,
       email: data.email,
       password: hashedPassword,
-      type: "user", // Default to user type
-      referralCode: generateUniqueReferralCode(), // Generate a unique referral code for the new user
+      type: "user",
+      referralCode: generateUniqueReferralCode(),
     });
-    console.log(newUser);
 
     const savedUser = await newUser.save();
+
+    // Send welcome email
+    await sendEmail(
+      savedUser.email,
+      `Welcome to ${process.env.APP_NAME}!`,
+      emailTemplates.welcome(savedUser.name)
+    );
 
     return res.send(savedUser);
   } catch (err) {
@@ -81,8 +84,6 @@ function generateUniqueReferralCode() {
 }
 
 router.post("/login", async (req, res) => {
-  console.log("login");
-
   const schema = joi.object({
     email: joi.string().min(6).required().email(),
     password: joi.string().min(6),
@@ -102,7 +103,15 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
 
-    console.log(token);
+    // Send login notification email
+    const currentTime = new Date().toLocaleString();
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    await sendEmail(
+      user.email,
+      `New Login to Your ${process.env.APP_NAME} Account`,
+      emailTemplates.loginNotification(user.name, currentTime, ipAddress)
+    );
 
     return res.send({ user: user, token: token });
   } catch (err) {
@@ -110,7 +119,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-async function sendEmail(email, res) {
+async function sendVerificationEmail(email, res) {
   const transporter = nodemailer.createTransport(
     smtpTransport({
       host: process.env.SMTP_HOST,
@@ -136,16 +145,12 @@ async function sendEmail(email, res) {
         <div style="background-color: #f0f0f0; padding: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
           <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); overflow: hidden;">
             <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff;">${
-                process.env.APP_NAME
-              }</h1>
+              <h1 style="margin: 0; color: #ffffff;">${process.env.APP_NAME}</h1>
             </div>
             <div style="padding: 20px;">
               <h2 style="margin-top: 0; color: #4CAF50;">Verify Your Email</h2>
               <p style="line-height: 1.6;">
-                Thank you for joining <strong>${
-                  process.env.APP_NAME
-                }</strong>. Please use the verification code below to complete your registration.
+                Thank you for joining <strong>${process.env.APP_NAME}</strong>. Please use the verification code below to complete your registration.
               </p>
               <div style="font-size: 24px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">
                 ${code}
@@ -155,9 +160,7 @@ async function sendEmail(email, res) {
               </p>
             </div>
             <div style="background-color: #f9f9f9; padding: 10px; text-align: center; color: #777; font-size: 14px;">
-              <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${
-      process.env.APP_NAME
-    }. All rights reserved.</p>
+              <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${process.env.APP_NAME}. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -190,8 +193,6 @@ async function sendEmail(email, res) {
 }
 
 router.post("/send-verification-code", async (req, res) => {
-  console.log("asdasd");
-
   const schema = joi.object({
     email: joi.string().email().required(),
   });
@@ -205,7 +206,7 @@ router.post("/send-verification-code", async (req, res) => {
     if (emailVerification && emailVerification.isVerified)
       return res.status(400).send("Email already verified");
 
-    await sendEmail(data.email, res, false);
+    await sendVerificationEmail(data.email, res);
   } catch (err) {
     console.log(err);
     return res.status(500).send(err);
