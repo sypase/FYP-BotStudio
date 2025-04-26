@@ -202,6 +202,9 @@ router.patch("/update/:id", validate, async (req, res) => {
   const { id } = req.params;
   const { name, isPublic, isActive, category } = req.body;
 
+  console.log(req.body);
+  
+
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -232,7 +235,10 @@ router.patch("/update/:id", validate, async (req, res) => {
       { _id: id, owner: req.user._id },
       updateData,
       { new: true }
-    );
+    ).select("name isPublic isActive category trainingStatus");
+
+    console.log(bot);
+    
 
     if (!bot) {
       return res.status(404).json({
@@ -240,6 +246,9 @@ router.patch("/update/:id", validate, async (req, res) => {
         message: "Bot not found",
       });
     }
+
+    console.log("Bot updated successfully");
+    
 
     res.json({
       success: true,
@@ -308,6 +317,9 @@ router.get("/public/:id", async (req, res) => {
       .select("name description category owner totalInteractions rating isActive")
       .populate("owner", "name")
 
+      console.log(bot);
+      
+
     if (!bot) {
       return res.status(404).json({
         success: false,
@@ -328,6 +340,63 @@ router.get("/public/:id", async (req, res) => {
   }
 })
 
+/**
+ * @route GET /api/bot/conversations
+ * @desc Get user's conversation history with bots
+ * @access Private
+ * @param {number} page - Page number for pagination (default: 1)
+ * @param {number} limit - Number of items per page (default: 10)
+ */
+router.get("/conversations", validate, async (req, res) => {
+  console.log("Hi i am here");
+  
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Validate pagination parameters
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid pagination parameters"
+      });
+    }
+
+    // Get total count for pagination
+    const total = await BotTransaction.countDocuments({ userId: req.user._id });
+
+    const conversations = await BotTransaction.find({ 
+      ownerId: req.user._id 
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('botId', 'name')
+      .select('botId input response status createdAt processingTime');
+
+    res.json({
+      success: true,
+      data: {
+        conversations,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch conversations",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Get bot by ID
 router.get("/:id", validate, async (req, res) => {
   const { id } = req.params;
@@ -343,7 +412,7 @@ router.get("/:id", validate, async (req, res) => {
     const bot = await Bot.findOne({
       _id: id,
       owner: req.user._id,
-    }).select("name botModelId trainingStatus isPublic isActive createdAt");
+    }).select("name botModelId trainingStatus isPublic isActive category createdAt");
 
     if (!bot) {
       return res.status(404).json({
@@ -701,29 +770,6 @@ router.get("/dashboard/stats", validate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch dashboard statistics"
-    });
-  }
-});
-
-// Get user conversations
-router.get("/conversations", validate, async (req, res) => {
-  try {
-    const conversations = await BotTransaction.find({ 
-      userId: req.user._id 
-    })
-      .sort({ createdAt: -1 })
-      .populate('botId', 'name')
-      .select('botId input response status createdAt processingTime');
-
-    res.json({
-      success: true,
-      data: conversations
-    });
-  } catch (error) {
-    console.error("Error fetching conversations:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch conversations"
     });
   }
 });

@@ -41,7 +41,7 @@ export default function ConversationsPage() {
       })
       const data = await response.json()
       if (response.ok) {
-        setConversations(data.data)
+        setConversations(data.data.conversations)
       } else {
         throw new Error(data.message || "Failed to fetch conversations")
       }

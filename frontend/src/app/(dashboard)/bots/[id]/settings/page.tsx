@@ -12,6 +12,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { serverURL } from "@/utils/utils"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Toaster } from "@/components/ui/toaster"
 
 interface BotSettings {
   _id: string
@@ -19,7 +27,18 @@ interface BotSettings {
   isPublic: boolean
   isActive: boolean
   trainingStatus: string
+  category: string
 }
+
+const categories = [
+  "Customer Service",
+  "Sales",
+  "Support",
+  "Education",
+  "Entertainment",
+  "Business",
+  "Other"
+]
 
 export default function BotSettingsPage() {
   const { id } = useParams<{ id: string }>()
@@ -34,6 +53,7 @@ export default function BotSettingsPage() {
   const [duplicateBotName, setDuplicateBotName] = useState("")
   const [isSavingPublic, setIsSavingPublic] = useState(false)
   const [isSavingActive, setIsSavingActive] = useState(false)
+  const [category, setCategory] = useState("Other")
 
   useEffect(() => {
     const fetchBot = async () => {
@@ -49,8 +69,10 @@ export default function BotSettingsPage() {
         }
 
         const data = await response.json()
+        console.log(data.data);
         setBot(data.data)
         setNewBotName(data.data.name)
+        setCategory(data.data.category || "Other")
       } catch (error) {
         console.error("Error fetching bot:", error)
         toast({
@@ -79,6 +101,9 @@ export default function BotSettingsPage() {
         },
         body: JSON.stringify({
           name: newBotName,
+          isPublic: bot.isPublic,
+          isActive: bot.isActive,
+          category: category,
         }),
       })
 
@@ -88,9 +113,10 @@ export default function BotSettingsPage() {
 
       const data = await response.json()
       setBot(data.data)
+      setCategory(data.data.category || "Other")
       toast({
         title: "Success",
-        description: "Bot name updated successfully",
+        description: "Bot settings updated successfully",
       })
     } catch (error) {
       console.error("Error updating bot:", error)
@@ -251,6 +277,42 @@ export default function BotSettingsPage() {
     }
   }
 
+  const handleCategoryChange = async (newCategory: string) => {
+    if (!bot) return
+
+    try {
+      const response = await fetch(`${serverURL}/bot/update/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          category: newCategory,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update category")
+      }
+
+      const data = await response.json()
+      setBot(data.data)
+      setCategory(data.data.category || "Other")
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      })
+    } catch (error) {
+      console.error("Error updating category:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update category",
+        variant: "destructive",
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -279,6 +341,7 @@ export default function BotSettingsPage() {
 
   return (
     <div className="container mx-auto py-8">
+      <Toaster />
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -309,6 +372,29 @@ export default function BotSettingsPage() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select 
+              value={category} 
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent className="bg-black text-white">
+                {categories.map((cat) => (
+                  <SelectItem 
+                    key={cat} 
+                    value={cat}
+                    className="hover:text-black"
+                  >
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Public Access</Label>
@@ -322,6 +408,7 @@ export default function BotSettingsPage() {
                 checked={bot.isPublic}
                 onCheckedChange={togglePublic}
                 disabled={bot.trainingStatus !== "completed" || isSavingPublic}
+                className={bot.isPublic ? "bg-green-500" : "bg-red-500"}
               />
             </div>
           </div>
@@ -339,6 +426,7 @@ export default function BotSettingsPage() {
                 checked={bot.isActive}
                 onCheckedChange={toggleActive}
                 disabled={bot.trainingStatus !== "completed" || isSavingActive}
+                className={bot.isActive ? "bg-green-500" : "bg-red-500"}
               />
             </div>
           </div>
@@ -414,7 +502,7 @@ export default function BotSettingsPage() {
             </AlertDialog>
           </div>
 
-          <Button onClick={handleSave} disabled={isSaving || newBotName === bot.name}>
+          <Button className="text-black" onClick={handleSave} disabled={isSaving || newBotName === bot.name}>
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Saving..." : "Save Name"}
           </Button>

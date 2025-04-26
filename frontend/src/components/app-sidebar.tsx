@@ -148,11 +148,6 @@ export default function AppSidebar() {
       href: "/profile",
       icon: User,
     },
-    {
-      title: "Settings",
-      href: "/settings",
-      icon: Settings,
-    },
   ];
 
   const isActive = (href: string) => {
