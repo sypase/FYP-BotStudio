@@ -17,7 +17,7 @@ interface PublicBot {
   description?: string
   category: string
   owner: {
-    username: string
+    name: string
   }
   totalInteractions: number
   rating: number
@@ -184,7 +184,11 @@ export default function MarketplacePage() {
                     </div>
                     <div>
                       <CardTitle className="text-white">{bot.name}</CardTitle>
-                      <CardDescription className="text-gray-400">by {bot.owner.username}</CardDescription>
+                      {bot.owner?.name && (
+                        <CardDescription className="text-gray-400">
+                          Created by {bot.owner.name.trim()}
+                        </CardDescription>
+                      )}
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-gray-800 text-gray-300">{bot.category}</Badge>
@@ -192,7 +196,7 @@ export default function MarketplacePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-400 mb-4">
-                  {bot.description || "No description available"}
+                  {bot.description || ""}
                 </p>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-1">
@@ -266,7 +270,11 @@ export default function MarketplacePage() {
                       </div>
                       <div>
                         <CardTitle className="text-white">{bot.name}</CardTitle>
-                        <CardDescription className="text-gray-400">by {bot.owner.username}</CardDescription>
+                        {bot.owner?.name && (
+                          <CardDescription className="text-gray-400">
+                            Created by {bot.owner.name.trim()}
+                          </CardDescription>
+                        )}
                       </div>
                     </div>
                     <Badge variant="secondary" className="bg-gray-800 text-gray-300">{bot.category}</Badge>
@@ -274,7 +282,7 @@ export default function MarketplacePage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-400 mb-4">
-                    {bot.description || "No description available"}
+                    {bot.description || ""}
                   </p>
                   <div className="flex items-center gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1">

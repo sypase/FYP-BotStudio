@@ -494,21 +494,21 @@ function BotCard({
               <DropdownMenuSeparator className="bg-gray-800" />
               <DropdownMenuItem
                 className="text-gray-300 hover:bg-white hover:text-black"
-                onClick={() => router.push(`/bots/${bot._id}`)}
+                onClick={() => router.push(`/bots/${bot._id}/settings`)}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-gray-300 hover:bg-white hover:text-black"
-                onClick={() => router.push(`/conversations?botId=${bot._id}`)}
+                onClick={() => router.push(`/bots/${bot._id}/chat`)}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Chat
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-gray-300 hover:bg-white hover:text-black"
-                onClick={() => router.push(`/bot-analytics/${bot._id}`)}
+                onClick={() => router.push(`/bots/${bot._id}/analytics`)}
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Analytics
@@ -546,7 +546,7 @@ function BotCard({
         <Button
           variant="outline"
           className="flex-1 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
-          onClick={() => router.push(`/conversations?botId=${bot._id}`)}
+          onClick={() => router.push(`/bots/${bot._id}/chat`)}
         >
           <MessageSquare className="h-4 w-4 mr-2" />
           Chat

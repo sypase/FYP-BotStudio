@@ -261,8 +261,10 @@ router.get("/public", async (req, res) => {
   try {
     const bots = await Bot.find({ isPublic: true, isActive: true })
       .select("name description category owner totalInteractions rating isActive")
-      .populate("owner", "username")
+      .populate("owner", "name")
       .sort({ totalInteractions: -1 })
+
+    console.log(bots)
 
     res.json({
       success: true,
@@ -282,7 +284,7 @@ router.get("/trending", async (req, res) => {
   try {
     const bots = await Bot.find({ isPublic: true, isActive: true })
       .select("name description category owner totalInteractions rating isActive")
-      .populate("owner", "username")
+      .populate("owner", "name")
       .sort({ totalInteractions: -1, rating: -1 })
       .limit(6)
 
