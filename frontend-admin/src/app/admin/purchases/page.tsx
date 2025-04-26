@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { FiEye, FiDollarSign } from "react-icons/fi";
+import { serverURL } from "@/utils/utils";
 
 interface Purchase {
   _id: string;
@@ -31,7 +32,7 @@ export default function PurchasesPage() {
   const fetchPurchases = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/admin/purchases`, {
+      const response = await axios.get(`${serverURL}/admin/purchases`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -46,9 +47,19 @@ export default function PurchasesPage() {
       }));
 
       setPurchases(formattedPurchases);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching purchases:', error);
-      toast.error('Failed to fetch purchases');
+      if (error.response) {
+        if (error.response.status === 401) {
+          toast.error('Session expired. Please login again.');
+          // Redirect to login page
+          window.location.href = '/admin';
+        } else {
+          toast.error(error.response.data.message || 'Failed to fetch purchases');
+        }
+      } else {
+        toast.error('Failed to fetch purchases. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
