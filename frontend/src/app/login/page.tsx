@@ -58,7 +58,7 @@ export default function LoginPage() {
         toast.error(data.error || 'Login failed')
       }
     } catch (error) {
-      toast.error('An error occurred during login')
+      toast.error('Password is incorrect Or Email does not exist')
     } finally {
       setIsLoading(false)
     }

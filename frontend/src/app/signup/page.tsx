@@ -53,7 +53,12 @@ export default function SignupPage() {
         toast.error(data.error || 'Failed to send verification code');
       }
     } catch (error) {
-      toast.error('An error occurred while sending verification code');
+      console.log(error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Email already exists or email is not valid');
+      }
     } finally {
       setIsLoading(false);
     }
