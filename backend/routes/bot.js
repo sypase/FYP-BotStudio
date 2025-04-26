@@ -306,7 +306,7 @@ router.get("/public/:id", async (req, res) => {
   try {
     const bot = await Bot.findOne({ _id: req.params.id, isPublic: true })
       .select("name description category owner totalInteractions rating isActive")
-      .populate("owner", "username")
+      .populate("owner", "name")
 
     if (!bot) {
       return res.status(404).json({
@@ -367,7 +367,7 @@ router.get("/:id", validate, async (req, res) => {
 });
 
 // Interact with public bot
-router.post("/public/interact/:id", async (req, res) => {
+router.post("/public/interact/:id", validate, async (req, res) => {
   try {
     const { message } = req.body
     if (!message) {
@@ -386,13 +386,29 @@ router.post("/public/interact/:id", async (req, res) => {
     }
 
     // Check user credits
-    const user = await User.findById(req.user.id)
+    const user = await User.findById(req.user._id)
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      })
+    }
+
     if (user.credits < 1) {
       return res.status(402).json({
         success: false,
         message: "Insufficient credits",
       })
     }
+
+    // Get bot response
+    const startTime = Date.now()
+    console.log(bot.botModelId)
+    const botResponse = await interactWithBot(bot.botModelId, message, bot.name)
+    const processingTime = Date.now() - startTime
+
+    // Extract the actual response text from the bot response
+    const responseText = botResponse.choices[0]?.message?.content || "No response from bot"
 
     // Deduct credits
     user.credits -= 1
@@ -405,18 +421,19 @@ router.post("/public/interact/:id", async (req, res) => {
     // Create bot transaction
     const botTransaction = new BotTransaction({
       botId: bot._id,
-      userId: req.user.id,
+      userId: req.user._id,
+      ownerId: req.user._id, // Add ownerId field
       input: message,
-      response: "Bot response here", // Replace with actual bot response
+      response: responseText, // Use the extracted response text
       status: "success",
-      processingTime: 0, // Replace with actual processing time
+      processingTime,
     })
     await botTransaction.save()
 
     res.json({
       success: true,
       data: {
-        response: "Bot response here", // Replace with actual bot response
+        response: responseText,
       },
       userCredits: user.credits,
     })
@@ -425,6 +442,7 @@ router.post("/public/interact/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to interact with bot",
+      error: error.message,
     })
   }
 })

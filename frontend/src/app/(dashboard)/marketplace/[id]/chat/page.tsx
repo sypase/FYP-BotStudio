@@ -18,8 +18,6 @@ interface Message {
   sender: "user" | "bot"
   timestamp: Date
   isLoading?: boolean
-  isTyping?: boolean
-  displayedContent?: string
 }
 
 interface PublicBotInfo {
@@ -28,7 +26,7 @@ interface PublicBotInfo {
   description?: string
   category: string
   owner: {
-    username: string
+    name: string
   }
   totalInteractions: number
   rating: number
@@ -87,8 +85,6 @@ export default function MarketplaceChatPage() {
           content: `Hello! I'm ${data.data.name}. How can I assist you today?`,
           sender: "bot",
           timestamp: new Date(),
-          isTyping: true,
-          displayedContent: "",
         },
       ])
     } catch (error) {
@@ -177,8 +173,8 @@ export default function MarketplaceChatPage() {
       }
 
       // Update user credits
-      if (data.userCredits !== undefined) {
-        setUserCredits(data.userCredits)
+      if (data.data?.userCredits !== undefined) {
+        setUserCredits(data.data.userCredits)
       }
 
       // Replace loading message with actual response
@@ -190,8 +186,6 @@ export default function MarketplaceChatPage() {
                 content: data.data.response,
                 sender: "bot",
                 timestamp: new Date(),
-                isTyping: true,
-                displayedContent: "",
               }
             : msg,
         ),
@@ -207,8 +201,6 @@ export default function MarketplaceChatPage() {
                 }`,
                 sender: "bot",
                 timestamp: new Date(),
-                isTyping: true,
-                displayedContent: "",
               }
             : msg,
         ),
@@ -233,7 +225,7 @@ export default function MarketplaceChatPage() {
 
   if (isFetchingBot) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading bot...</p>
@@ -244,7 +236,7 @@ export default function MarketplaceChatPage() {
 
   if (!botInfo) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-background">
         <Card className="p-8 max-w-md">
           <div className="flex flex-col items-center gap-4 text-center">
             <AlertCircle className="h-12 w-12 text-destructive" />
@@ -263,24 +255,24 @@ export default function MarketplaceChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b bg-card shadow-sm">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
-            <Avatar>
-              <AvatarFallback>
-                <Bot className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border-2 border-primary bg-gradient-to-br from-violet-500 to-indigo-500">
+              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-indigo-500 text-white">
+                <Bot className="h-6 w-6 drop-shadow-md" />
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-lg font-semibold">{botInfo.name}</h1>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">by {botInfo.owner.username}</Badge>
-                <Badge variant={botInfo.isActive ? "default" : "secondary"}>
+              <h1 className="text-xl font-semibold text-foreground">{botInfo.name}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="font-normal">by {botInfo.owner.name}</Badge>
+                <Badge variant={botInfo.isActive ? "default" : "secondary"} className="font-normal text-black">
                   {botInfo.isActive ? "Active" : "Inactive"}
                 </Badge>
               </div>
@@ -288,9 +280,9 @@ export default function MarketplaceChatPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5">
             <CreditCard className="h-4 w-4" />
-            {userCredits} Credits
+            <span className="font-medium">{userCredits} Credits</span>
           </Badge>
         </div>
       </div>
@@ -300,7 +292,7 @@ export default function MarketplaceChatPage() {
         <div className="bg-yellow-500/10 border-b border-yellow-500/20 p-4">
           <div className="flex items-center gap-2 text-yellow-500">
             <AlertCircle className="h-5 w-5" />
-            <p className="text-sm">
+            <p className="text-sm font-medium">
               This bot is currently inactive. Please try again later.
             </p>
           </div>
@@ -312,26 +304,28 @@ export default function MarketplaceChatPage() {
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex ${
-              message.sender === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={cn(
+              "flex",
+              message.sender === "user" ? "justify-end" : "justify-start",
+              "animate-in fade-in slide-in-from-bottom-2 duration-300"
+            )}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-4 ${
+              className={cn(
+                "max-w-[85%] rounded-2xl p-4",
                 message.sender === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
+                  ? "bg-primary text-black"
+                  : "bg-muted text-foreground",
+                "shadow-sm"
+              )}
             >
               {message.isLoading ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span>Thinking...</span>
+                  <span className="font-medium">Thinking...</span>
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap">
-                  {message.isTyping ? message.displayedContent : message.content}
-                </p>
+                <p className="whitespace-pre-wrap text-base leading-relaxed">{message.content}</p>
               )}
             </div>
           </div>
@@ -340,7 +334,7 @@ export default function MarketplaceChatPage() {
       </div>
 
       {/* Chat Input */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t bg-card shadow-sm">
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -359,7 +353,7 @@ export default function MarketplaceChatPage() {
                   : "Type your message..."
               }
               disabled={!botInfo.isActive}
-              className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full resize-none rounded-xl border bg-background px-4 py-3 text-base text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               rows={1}
             />
           </div>
@@ -367,8 +361,9 @@ export default function MarketplaceChatPage() {
             type="submit"
             size="icon"
             disabled={!inputMessage.trim() || isLoading || !botInfo.isActive}
+            className="h-12 w-12 bg-foreground hover:bg-foreground/90 rounded-xl"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5 text-background" />
           </Button>
         </form>
       </div>
