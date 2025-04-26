@@ -111,11 +111,22 @@ export default function AutoScraperPage() {
         return;
       }
 
-      const [hours, minutes] = selectedTime.split(":").map(Number);
-      const nextRunDate = selectedDate || new Date();
-      nextRunDate.setHours(hours, minutes, 0, 0);
+      // Validate URL
+      if (!newSchedule.url.startsWith('http://') && !newSchedule.url.startsWith('https://')) {
+        throw new Error('Please enter a valid URL starting with http:// or https://');
+      }
 
-      await axios.post(
+      // Combine date and time for nextRun
+      const [hours, minutes] = selectedTime.split(':');
+      const nextRunDate = new Date(selectedDate || new Date());
+      nextRunDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      // Format the nextRun date for display
+      const formattedTime = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+      const formattedDate = format(nextRunDate, 'yyyy-MM-dd');
+      console.log(`Creating schedule with next run time: ${formattedDate} ${formattedTime}`);
+
+      const response = await axios.post(
         `${serverURL}/api/scraper-schedules`,
         {
           ...newSchedule,
@@ -125,7 +136,8 @@ export default function AutoScraperPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchSchedules();
+
+      setSchedules([...schedules, response.data]);
       setNewSchedule({
         name: "",
         url: "",
@@ -133,12 +145,14 @@ export default function AutoScraperPage() {
         customSchedule: "",
         nextRun: new Date().toISOString(),
       });
-      setSelectedDate(new Date());
-      setSelectedTime("00:00");
+      
+      // Reset time to current time
+      const now = new Date();
+      setSelectedTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
     } catch (error) {
       console.error("Failed to create schedule", error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        router.push("/login");
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to create schedule");
       }
     } finally {
       setLoading(false);
@@ -152,19 +166,23 @@ export default function AutoScraperPage() {
         router.push("/login");
         return;
       }
-      await axios.patch(
+
+      const schedule = schedules.find(s => s._id === id);
+      if (!schedule) return;
+
+      const response = await axios.patch(
         `${serverURL}/api/scraper-schedules/${id}/toggle`,
-        {},
+        { isActive: !schedule.isActive },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchSchedules();
+
+      setSchedules(schedules.map(s => 
+        s._id === id ? { ...s, isActive: !s.isActive } : s
+      ));
     } catch (error) {
       console.error("Failed to toggle schedule", error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        router.push("/login");
-      }
     }
   };
 
@@ -175,19 +193,18 @@ export default function AutoScraperPage() {
         router.push("/login");
         return;
       }
+
       await axios.delete(`${serverURL}/api/scraper-schedules/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchSchedules();
+
+      setSchedules(schedules.filter(s => s._id !== id));
       if (selectedSchedule?._id === id) {
         setSelectedSchedule(null);
         setScrapes([]);
       }
     } catch (error) {
       console.error("Failed to delete schedule", error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        router.push("/login");
-      }
     }
   };
 
@@ -199,6 +216,7 @@ export default function AutoScraperPage() {
         router.push("/login");
         return;
       }
+
       await axios.post(
         `${serverURL}/api/scraper-schedules/${id}/execute`,
         {},
@@ -206,9 +224,14 @@ export default function AutoScraperPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchScheduleDetails(id);
+
+      // Refresh the schedule details
+      await fetchScheduleDetails(id);
     } catch (error) {
       console.error("Failed to execute scraping", error);
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to execute scraping");
+      }
     } finally {
       setExecuting(null);
     }

@@ -3,8 +3,72 @@ import ScraperSchedule from '../models/ScraperSchedule.js';
 import { validate } from '../middlewares/validate.js';
 import { extractSiteContent, generateQAPairs, saveToS3 } from '../utils/scraperUtils.js';
 import Scrape from '../models/Scrape.js';
+import cron from 'node-cron';
 
 const router = express.Router();
+
+// Store active cron jobs
+const activeJobs = new Map();
+
+// Function to schedule a scraper
+function scheduleScraper(schedule) {
+  if (!schedule.isActive) {
+    return;
+  }
+
+  // Clear existing job if any
+  if (activeJobs.has(schedule._id)) {
+    activeJobs.get(schedule._id).stop();
+    activeJobs.delete(schedule._id);
+  }
+
+  // Create cron expression based on schedule
+  let cronExpression;
+  let nextRunTime;
+  
+  if (schedule.schedule === 'custom' && schedule.customSchedule) {
+    cronExpression = schedule.customSchedule;
+    nextRunTime = "Custom schedule: " + schedule.customSchedule;
+  } else {
+    // Parse the nextRun date
+    const nextRunDate = new Date(schedule.nextRun);
+    const hours = nextRunDate.getHours();
+    const minutes = nextRunDate.getMinutes();
+    
+    switch (schedule.schedule) {
+      case 'daily':
+        cronExpression = `${minutes} ${hours} * * *`; // Run at specific time every day
+        nextRunTime = `Daily at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        break;
+      case 'weekly':
+        const dayOfWeek = nextRunDate.getDay();
+        cronExpression = `${minutes} ${hours} * * ${dayOfWeek}`; // Run at specific time on specific day
+        nextRunTime = `Weekly on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]} at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        break;
+      case 'monthly':
+        const dayOfMonth = nextRunDate.getDate();
+        cronExpression = `${minutes} ${hours} ${dayOfMonth} * *`; // Run at specific time on specific day of month
+        nextRunTime = `Monthly on day ${dayOfMonth} at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        break;
+      default:
+        console.error(`Invalid schedule type: ${schedule.schedule}`);
+        return;
+    }
+  }
+
+  // Schedule the job
+  const job = cron.schedule(cronExpression, async () => {
+    try {
+      console.log(`[${new Date().toISOString()}] Running scheduled scrape for: ${schedule.name}`);
+      await executeScraping(schedule);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error in scheduled scrape for ${schedule.name}:`, error);
+    }
+  });
+
+  activeJobs.set(schedule._id, job);
+  console.log(`[${new Date().toISOString()}] Scheduled scraper: ${schedule.name} - ${nextRunTime}`);
+}
 
 // Function to execute scraping for a schedule
 async function executeScraping(schedule) {
@@ -77,6 +141,21 @@ async function executeScraping(schedule) {
   }
 }
 
+// Initialize schedules on server start
+async function initializeSchedules() {
+  try {
+    const schedules = await ScraperSchedule.find({ isActive: true });
+    schedules.forEach(schedule => {
+      scheduleScraper(schedule);
+    });
+  } catch (error) {
+    console.error('Error initializing schedules:', error);
+  }
+}
+
+// Call initializeSchedules when the server starts
+initializeSchedules();
+
 // Create a new scraper schedule
 router.post('/', validate, async (req, res) => {
   try {
@@ -96,6 +175,10 @@ router.post('/', validate, async (req, res) => {
     });
 
     await scraperSchedule.save();
+    
+    // Schedule the new scraper
+    scheduleScraper(scraperSchedule);
+    
     res.status(201).json(scraperSchedule);
   } catch (error) {
     res.status(400).json({ message: error.message });
