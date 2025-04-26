@@ -62,4 +62,95 @@ router.get("/:id/analytics", validate, async (req, res) => {
     console.error("Error fetching bot analytics:", error);
     res.status(500).json({ error: "Failed to fetch bot analytics" });
   }
+});
+
+/**
+ * @route GET /api/bot/user/analytics
+ * @desc Get analytics for all bots owned by the user
+ * @access Private
+ */
+router.get("/user/analytics", validate, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all bots owned by the user
+    const bots = await Bot.find({ owner: userId })
+      .select('name isPublic isActive category createdAt');
+
+    // Get all transactions for these bots
+    const transactions = await BotTransaction.find({ 
+      ownerId: userId 
+    }).populate('botId', 'name');
+
+    // Calculate total interactions
+    const totalInteractions = transactions.length;
+
+    // Calculate interactions per bot
+    const botAnalytics = bots.map(bot => {
+      const botTransactions = transactions.filter(t => t.botId._id.toString() === bot._id.toString());
+      const successCount = botTransactions.filter(t => t.status === 'success').length;
+      const errorCount = botTransactions.filter(t => t.status === 'error').length;
+      const totalBotInteractions = botTransactions.length;
+      
+      return {
+        botId: bot._id,
+        botName: bot.name,
+        isPublic: bot.isPublic,
+        isActive: bot.isActive,
+        category: bot.category,
+        totalInteractions: totalBotInteractions,
+        successRate: totalBotInteractions > 0 
+          ? (successCount / totalBotInteractions) * 100 
+          : 0,
+        errorRate: totalBotInteractions > 0 
+          ? (errorCount / totalBotInteractions) * 100 
+          : 0,
+        avgProcessingTime: totalBotInteractions > 0
+          ? botTransactions.reduce((sum, t) => sum + t.processingTime, 0) / totalBotInteractions
+          : 0,
+        lastInteraction: botTransactions.length > 0
+          ? botTransactions[0].createdAt
+          : null
+      };
+    });
+
+    // Calculate daily usage across all bots
+    const dailyUsage = {};
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.createdAt).toISOString().split('T')[0];
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = 0;
+      }
+      dailyUsage[date]++;
+    });
+
+    // Convert to array format for frontend
+    const dailyUsageArray = Object.entries(dailyUsage)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json({
+      success: true,
+      data: {
+        totalInteractions,
+        botAnalytics,
+        dailyUsage: dailyUsageArray,
+        summary: {
+          totalBots: bots.length,
+          activeBots: bots.filter(b => b.isActive).length,
+          publicBots: bots.filter(b => b.isPublic).length,
+          averageSuccessRate: botAnalytics.length > 0
+            ? botAnalytics.reduce((sum, b) => sum + b.successRate, 0) / botAnalytics.length
+            : 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching user bot analytics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bot analytics",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 }); 

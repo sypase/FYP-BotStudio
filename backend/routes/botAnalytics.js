@@ -5,6 +5,46 @@ import { validate } from "../middlewares/validate.js";
 
 const router = express.Router();
 
+// Get bot interaction stats for all bots
+router.get("/stats", validate, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all bots owned by the user
+    const bots = await Bots.find({ owner: userId }).select('name');
+
+    // Get all transactions for these bots
+    const transactions = await BotTransaction.find({ 
+      ownerId: userId 
+    }).populate('botId', 'name');
+
+    // Group interactions by bot
+    const botInteractions = bots.map(bot => {
+      const botTransactions = transactions.filter(t => t.botId._id.toString() === bot._id.toString());
+      return {
+        botId: bot._id,
+        botName: bot.name,
+        count: botTransactions.length
+      };
+    });
+
+    // Sort by count in descending order
+    botInteractions.sort((a, b) => b.count - a.count);
+
+    res.json({ 
+      success: true,
+      interactions: botInteractions 
+    });
+  } catch (error) {
+    console.error("Error fetching bot interaction stats:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch bot interaction stats",
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Get analytics for a specific bot
 router.get("/:id", validate, async (req, res) => {
   try {
@@ -71,37 +111,90 @@ router.get("/:id", validate, async (req, res) => {
   }
 });
 
-// Get bot interaction stats for all bots
-router.get("/stats", validate, async (req, res) => {
+// Get analytics for all bots owned by the user
+router.get("/user/analytics", validate, async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get all bot transactions for the user
-    const transactions = await BotTransaction.find({ ownerId: userId })
-      .populate('botId', 'name')
-      .sort({ createdAt: -1 });
+    // Get all bots owned by the user
+    const bots = await Bots.find({ owner: userId })
+      .select('name isPublic isActive category createdAt');
 
-    // Group interactions by bot
-    const botInteractions = {};
-    transactions.forEach(transaction => {
-      const botId = transaction.botId._id.toString();
-      if (!botInteractions[botId]) {
-        botInteractions[botId] = {
-          botId,
-          botName: transaction.botId.name,
-          count: 0
-        };
-      }
-      botInteractions[botId].count++;
+    // Get all transactions for these bots
+    const transactions = await BotTransaction.find({ 
+      ownerId: userId 
+    }).populate('botId', 'name');
+
+    // Calculate total interactions
+    const totalInteractions = transactions.length;
+
+    // Calculate interactions per bot
+    const botAnalytics = bots.map(bot => {
+      const botTransactions = transactions.filter(t => t.botId._id.toString() === bot._id.toString());
+      const successCount = botTransactions.filter(t => t.status === 'success').length;
+      const errorCount = botTransactions.filter(t => t.status === 'error').length;
+      const totalBotInteractions = botTransactions.length;
+      
+      return {
+        botId: bot._id,
+        botName: bot.name,
+        isPublic: bot.isPublic,
+        isActive: bot.isActive,
+        category: bot.category,
+        totalInteractions: totalBotInteractions,
+        successRate: totalBotInteractions > 0 
+          ? (successCount / totalBotInteractions) * 100 
+          : 0,
+        errorRate: totalBotInteractions > 0 
+          ? (errorCount / totalBotInteractions) * 100 
+          : 0,
+        avgProcessingTime: totalBotInteractions > 0
+          ? botTransactions.reduce((sum, t) => sum + t.processingTime, 0) / totalBotInteractions
+          : 0,
+        lastInteraction: botTransactions.length > 0
+          ? botTransactions[0].createdAt
+          : null
+      };
     });
 
-    // Convert to array and sort by count
-    const interactions = Object.values(botInteractions).sort((a, b) => b.count - a.count);
+    // Calculate daily usage across all bots
+    const dailyUsage = {};
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.createdAt).toISOString().split('T')[0];
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = 0;
+      }
+      dailyUsage[date]++;
+    });
 
-    res.json({ interactions });
+    // Convert to array format for frontend
+    const dailyUsageArray = Object.entries(dailyUsage)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json({
+      success: true,
+      data: {
+        totalInteractions,
+        botAnalytics,
+        dailyUsage: dailyUsageArray,
+        summary: {
+          totalBots: bots.length,
+          activeBots: bots.filter(b => b.isActive).length,
+          publicBots: bots.filter(b => b.isPublic).length,
+          averageSuccessRate: botAnalytics.length > 0
+            ? botAnalytics.reduce((sum, b) => sum + b.successRate, 0) / botAnalytics.length
+            : 0
+        }
+      }
+    });
   } catch (error) {
-    console.error("Error fetching bot interaction stats:", error);
-    res.status(500).json({ error: "Failed to fetch bot interaction stats" });
+    console.error("Error fetching user bot analytics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bot analytics",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

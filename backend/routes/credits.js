@@ -238,4 +238,41 @@ router.post('/verify-payment', validate, async (req, res) => {
   }
 });
 
+// Get available credits for user
+router.get('/available', validate, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const credits = await Credit.aggregate([
+            { $match: { userId, status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+
+        res.json({ credits: credits.length > 0 ? credits[0].total : 0 });
+    } catch (error) {
+        console.error('Error fetching credits:', error);
+        res.status(500).json({ error: 'Failed to fetch credits' });
+    }
+});
+
+// Get credit transactions for user
+router.get('/transactions', validate, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const transactions = await Credit.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(20); // Limit to last 20 transactions
+
+        res.json({
+            success: true,
+            transactions
+        });
+    } catch (error) {
+        console.error('Error fetching credit transactions:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch credit transactions'
+        });
+    }
+});
+
 export default router; 

@@ -114,7 +114,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold text-white">Dashboard</h1>
         <Button 
           onClick={() => router.push('/bots')}
-          className="bg-primary hover:bg-primary/90 text-white"
+          className="bg-primary hover:bg-primary/90 text-black"
         >
           <Plus className="mr-2 h-4 w-4" />
           Create New Bot

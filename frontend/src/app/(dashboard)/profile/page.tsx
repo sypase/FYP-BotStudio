@@ -9,6 +9,8 @@ import { serverURL } from '@/utils/utils';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CreditCard } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { formatDistanceToNow } from "date-fns";
 
 interface UserProfile {
   name: string;
@@ -33,12 +35,49 @@ interface BotTransaction {
   status: string;
 }
 
+interface BotAnalytics {
+  botId: string;
+  botName: string;
+  isPublic: boolean;
+  isActive: boolean;
+  category: string;
+  totalInteractions: number;
+  successRate: number;
+  errorRate: number;
+  avgProcessingTime: number;
+  lastInteraction: string | null;
+}
+
+interface AnalyticsData {
+  totalInteractions: number;
+  botAnalytics: BotAnalytics[];
+  dailyUsage: { date: string; count: number }[];
+  summary: {
+    totalBots: number;
+    activeBots: number;
+    publicBots: number;
+    averageSuccessRate: number;
+  };
+}
+
+interface CreditTransaction {
+  _id: string;
+  amount: number;
+  price: number;
+  status: string;
+  stripePaymentId: string;
+  createdAt: string;
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [botInteractions, setBotInteractions] = useState<BotInteraction[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<BotTransaction[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [creditTransactions, setCreditTransactions] = useState<CreditTransaction[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -95,13 +134,15 @@ export default function ProfilePage() {
       if (!token) return;
 
       try {
-        const response = await axios.get(`${serverURL}/bot-interactions/stats`, {
+        const response = await axios.get(`${serverURL}/bot-analytics/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        setBotInteractions(response.data.interactions);
+        if (response.data.interactions) {
+          setBotInteractions(response.data.interactions);
+        }
       } catch (error) {
         console.error('Failed to fetch bot interactions', error);
       }
@@ -118,7 +159,9 @@ export default function ProfilePage() {
           },
         });
 
-        setRecentTransactions(response.data.transactions);
+        if (response.data.transactions) {
+          setRecentTransactions(response.data.transactions);
+        }
       } catch (error) {
         console.error('Failed to fetch recent transactions', error);
       } finally {
@@ -126,10 +169,54 @@ export default function ProfilePage() {
       }
     };
 
+    const fetchBotAnalytics = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+
+        const response = await axios.get(`${serverURL}/bot-analytics/user/analytics`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data.success) {
+          setAnalytics(response.data.data);
+          setBotInteractions(response.data.data.botAnalytics);
+        }
+      } catch (error) {
+        console.error("Failed to fetch bot analytics", error);
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    };
+
+    const fetchCreditTransactions = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        const response = await axios.get(`${serverURL}/credits/transactions`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          setCreditTransactions(response.data.transactions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch credit transactions', error);
+      }
+    };
+
     fetchUserData();
     fetchCredits();
     fetchBotInteractions();
     fetchRecentTransactions();
+    fetchBotAnalytics();
+    fetchCreditTransactions();
 
     return () => {
       window.removeEventListener('creditsUpdated', handleCreditsUpdated as EventListener);
@@ -189,7 +276,7 @@ export default function ProfilePage() {
       </div>
 
       <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-900 border-gray-800">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-900 border-gray-800">
           <TabsTrigger 
             value="analytics" 
             className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-800"
@@ -200,7 +287,13 @@ export default function ProfilePage() {
             value="transactions" 
             className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-800"
           >
-            Recent Transactions
+            Bot Transactions
+          </TabsTrigger>
+          <TabsTrigger 
+            value="credits" 
+            className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-800"
+          >
+            Credit History
           </TabsTrigger>
         </TabsList>
         <TabsContent value="analytics">
@@ -210,11 +303,11 @@ export default function ProfilePage() {
               <CardDescription className="text-gray-400">Number of interactions per bot</CardDescription>
             </CardHeader>
             <CardContent>
-              {botInteractions.length > 0 ? (
+              {analytics && analytics.botAnalytics && analytics.botAnalytics.length > 0 ? (
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={botInteractions}
+                      data={analytics.botAnalytics}
                       margin={{
                         top: 5,
                         right: 30,
@@ -224,7 +317,7 @@ export default function ProfilePage() {
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="botName" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <YAxis dataKey="totalInteractions" stroke="#9CA3AF" />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: '#1F2937',
@@ -232,7 +325,7 @@ export default function ProfilePage() {
                           color: '#F3F4F6'
                         }}
                       />
-                      <Bar dataKey="count" fill="#6366F1" />
+                      <Bar dataKey="totalInteractions" name="Total Interactions" fill="#6366F1" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -287,7 +380,186 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="credits">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white">Credit Transactions</CardTitle>
+              <CardDescription className="text-gray-400">Your credit purchase history</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {creditTransactions.length > 0 ? (
+                <div className="space-y-4">
+                  {creditTransactions.map((transaction) => (
+                    <Card key={transaction._id} className="bg-gray-800 border-gray-700">
+                      <CardHeader>
+                        <div className="flex justify-between">
+                          <CardTitle className="text-lg text-white">
+                            {transaction.amount} Credits
+                          </CardTitle>
+                          <span className={`text-sm ${
+                            transaction.status === 'completed' ? 'text-green-400' : 
+                            transaction.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>
+                            {transaction.status}
+                          </span>
+                        </div>
+                        <CardDescription className="text-gray-400">
+                          {new Date(transaction.createdAt).toLocaleString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-300">Price:</span>
+                            <span className="text-sm text-white">${transaction.price}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-300">Payment ID:</span>
+                            <span className="text-sm text-white">{transaction.stripePaymentId}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">No credit transactions yet</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Bot Analytics Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-6 text-white">Bot Analytics</h2>
+        
+        {loadingAnalytics ? (
+          <div className="text-center">Loading analytics...</div>
+        ) : analytics ? (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Total Bots</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{analytics.summary.totalBots}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Active Bots</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{analytics.summary.activeBots}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Public Bots</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{analytics.summary.publicBots}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Avg. Success Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">
+                    {analytics.summary.averageSuccessRate.toFixed(1)}%
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bot Analytics Table */}
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg text-white">Bot Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-gray-800">
+                        <th className="p-4 text-white">Bot Name</th>
+                        <th className="p-4 text-white">Status</th>
+                        <th className="p-4 text-white">Interactions</th>
+                        <th className="p-4 text-white">Success Rate</th>
+                        <th className="p-4 text-white">Avg. Response Time</th>
+                        <th className="p-4 text-white">Last Interaction</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.botAnalytics.map((bot) => (
+                        <tr key={bot.botId} className="border-b border-gray-800">
+                          <td className="p-4 text-white">{bot.botName}</td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              bot.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {bot.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-white">{bot.totalInteractions}</td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={bot.successRate} 
+                                className="w-24 bg-gray-700"
+                              />
+                              <span className="text-white">{bot.successRate.toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-white">{bot.avgProcessingTime.toFixed(0)}ms</td>
+                          <td className="p-4 text-white">
+                            {bot.lastInteraction 
+                              ? formatDistanceToNow(new Date(bot.lastInteraction), { addSuffix: true })
+                              : 'Never'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Usage Chart */}
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg text-white">Daily Usage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  {/* Add your chart component here */}
+                  <div className="flex items-end h-full gap-2">
+                    {analytics.dailyUsage.map((day) => (
+                      <div 
+                        key={day.date} 
+                        className="flex-1 bg-blue-600"
+                        style={{ height: `${(day.count / Math.max(...analytics.dailyUsage.map(d => d.count))) * 100}%` }}
+                      >
+                        <div className="text-xs text-center text-white mt-2">
+                          {new Date(day.date).toLocaleDateString()}
+                          <br />
+                          {day.count}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="text-center text-white">No analytics data available</div>
+        )}
+      </div>
     </div>
   );
 } 

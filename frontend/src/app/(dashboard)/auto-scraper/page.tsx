@@ -239,7 +239,15 @@ export default function AutoScraperPage() {
 
   return (
     <div className="container mx-auto py-8 dark:bg-gray-950 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-white">Auto Scraper</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white">Auto Scraper</h1>
+        <Button
+          onClick={() => router.push('/scraper')}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          View Auto Scrapes
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Create New Schedule */}
