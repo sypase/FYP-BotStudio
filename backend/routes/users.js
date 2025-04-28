@@ -400,4 +400,25 @@ router.post("/admin-login", async (req, res) => {
   }
 });
 
+router.put("/update-name", validate, async (req, res) => {
+  const schema = joi.object({
+    name: joi.string().min(3).required(),
+  });
+
+  try {
+    const data = await schema.validateAsync(req.body);
+    
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).send("User not found");
+
+    user.name = data.name;
+    await user.save();
+
+    return res.send({ message: "Name updated successfully", user: { name: user.name } });
+  } catch (err) {
+    console.error("Error updating name:", err);
+    return res.status(500).send("Internal server error");
+  }
+});
+
 export default router;

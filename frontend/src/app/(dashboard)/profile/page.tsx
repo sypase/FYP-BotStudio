@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { serverURL } from '@/utils/utils';
 import axios from 'axios';
@@ -11,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CreditCard } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface UserProfile {
   name: string;
@@ -73,6 +75,8 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
   const [botInteractions, setBotInteractions] = useState<BotInteraction[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<BotTransaction[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -227,6 +231,32 @@ export default function ProfilePage() {
     router.push('/credits');
   };
 
+  const handleUpdateName = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await axios.put(
+        `${serverURL}/users/update-name`,
+        { name: newName },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.user) {
+        setUser(prev => prev ? { ...prev, name: response.data.user.name } : null);
+        setIsEditingName(false);
+        toast.success("Your name has been updated successfully");
+      }
+    } catch (error) {
+      console.error('Failed to update name', error);
+      toast.error("Failed to update name. Please try again.");
+    }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen dark:bg-gray-950 text-white">Loading...</div>;
   }
@@ -243,7 +273,38 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium text-white">Name</h3>
-                <p className="text-gray-300">{user?.name}</p>
+                {isEditingName ? (
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="bg-gray-800 text-white border-gray-700"
+                      placeholder="Enter new name"
+                    />
+                    <Button onClick={handleUpdateName} className="bg-blue-600 hover:bg-blue-700">
+                      Save
+                    </Button>
+                    <Button onClick={() => setIsEditingName(false)} variant="outline" className="border-gray-700 text-white">
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-300">{user?.name}</p>
+                    <Button
+                      onClick={() => {
+                        setNewName(user?.name || '');
+                        setIsEditingName(true);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-700 text-white"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="text-lg font-medium text-white">Email</h3>
