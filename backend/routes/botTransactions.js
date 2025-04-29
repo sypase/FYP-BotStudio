@@ -18,8 +18,8 @@ router.get("/", validate, async (req, res) => {
     // Format the response
     const formattedTransactions = transactions.map(transaction => ({
       _id: transaction._id,
-      botId: transaction.botId._id,
-      botName: transaction.botId.name,
+      botId: transaction.botId?._id || null,
+      botName: transaction.botId?.name || 'Unknown Bot',
       input: transaction.input,
       response: transaction.response,
       createdAt: transaction.createdAt,
@@ -48,8 +48,8 @@ router.get("/recent", validate, async (req, res) => {
     // Format the response
     const formattedTransactions = transactions.map(transaction => ({
       _id: transaction._id,
-      botId: transaction.botId._id,
-      botName: transaction.botId.name,
+      botId: transaction.botId?._id || null,
+      botName: transaction.botId?.name || 'Unknown Bot',
       input: transaction.input,
       response: transaction.response,
       createdAt: transaction.createdAt,
