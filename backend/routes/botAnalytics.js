@@ -20,7 +20,7 @@ router.get("/stats", validate, async (req, res) => {
 
     // Group interactions by bot
     const botInteractions = bots.map(bot => {
-      const botTransactions = transactions.filter(t => t.botId._id.toString() === bot._id.toString());
+      const botTransactions = transactions.filter(t => t.botId && t.botId._id && t.botId._id.toString() === bot._id.toString());
       return {
         botId: bot._id,
         botName: bot.name,
@@ -130,7 +130,7 @@ router.get("/user/analytics", validate, async (req, res) => {
 
     // Calculate interactions per bot
     const botAnalytics = bots.map(bot => {
-      const botTransactions = transactions.filter(t => t.botId._id.toString() === bot._id.toString());
+      const botTransactions = transactions.filter(t => t.botId && t.botId._id && t.botId._id.toString() === bot._id.toString());
       const successCount = botTransactions.filter(t => t.status === 'success').length;
       const errorCount = botTransactions.filter(t => t.status === 'error').length;
       const totalBotInteractions = botTransactions.length;
@@ -149,7 +149,7 @@ router.get("/user/analytics", validate, async (req, res) => {
           ? (errorCount / totalBotInteractions) * 100 
           : 0,
         avgProcessingTime: totalBotInteractions > 0
-          ? botTransactions.reduce((sum, t) => sum + t.processingTime, 0) / totalBotInteractions
+          ? botTransactions.reduce((sum, t) => sum + (t.processingTime || 0), 0) / totalBotInteractions
           : 0,
         lastInteraction: botTransactions.length > 0
           ? botTransactions[0].createdAt
@@ -160,11 +160,13 @@ router.get("/user/analytics", validate, async (req, res) => {
     // Calculate daily usage across all bots
     const dailyUsage = {};
     transactions.forEach(transaction => {
-      const date = new Date(transaction.createdAt).toISOString().split('T')[0];
-      if (!dailyUsage[date]) {
-        dailyUsage[date] = 0;
+      if (transaction.createdAt) {
+        const date = new Date(transaction.createdAt).toISOString().split('T')[0];
+        if (!dailyUsage[date]) {
+          dailyUsage[date] = 0;
+        }
+        dailyUsage[date]++;
       }
-      dailyUsage[date]++;
     });
 
     // Convert to array format for frontend

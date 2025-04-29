@@ -474,6 +474,10 @@ function BotCard({
   const handleCheckStatus = async () => {
     try {
       setIsRefreshing(true)
+      toast({
+        title: "Checking Status",
+        description: "Fetching the latest training status...",
+      })
       const response = await fetch(`${serverURL}/bot/finetunestatus`, {
         method: 'POST',
         headers: {

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 interface BotSettings {
   _id: string
@@ -32,7 +33,7 @@ interface BotSettings {
 
 const categories = [
   "Customer Service",
-  "Sales",
+  "Sales", 
   "Support",
   "Education",
   "Entertainment",
@@ -54,6 +55,8 @@ export default function BotSettingsPage() {
   const [isSavingPublic, setIsSavingPublic] = useState(false)
   const [isSavingActive, setIsSavingActive] = useState(false)
   const [category, setCategory] = useState("Other")
+  const [showPublicDialog, setShowPublicDialog] = useState(false)
+  const [showActiveDialog, setShowActiveDialog] = useState(false)
 
   useEffect(() => {
     const fetchBot = async () => {
@@ -114,16 +117,23 @@ export default function BotSettingsPage() {
       const data = await response.json()
       setBot(data.data)
       setCategory(data.data.category || "Other")
+      window.alert("Bot settings updated successfully!")
       toast({
         title: "Success",
         description: "Bot settings updated successfully",
+        variant: "default",
+        duration: 3000,
+        className: "bg-green-500 text-white",
       })
     } catch (error) {
       console.error("Error updating bot:", error)
+      window.alert("Failed to update bot settings!")
       toast({
         title: "Error",
         description: "Failed to update bot settings",
         variant: "destructive",
+        duration: 3000,
+        className: "bg-red-500 text-white",
       })
     } finally {
       setIsSaving(false)
@@ -135,27 +145,30 @@ export default function BotSettingsPage() {
 
     setIsDeleting(true)
     try {
-      const response = await fetch(`${serverURL}/bot/delete/${id}`, {
+      const response = await fetch(`${serverURL}/bot/${id}`, {
         method: "DELETE",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete bot")
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to delete bot")
       }
 
       toast({
         title: "Success",
         description: "Bot deleted successfully",
+        variant: "default",
       })
       router.push("/bots")
     } catch (error) {
       console.error("Error deleting bot:", error)
       toast({
         title: "Error",
-        description: "Failed to delete bot",
+        description: error instanceof Error ? error.message : "Failed to delete bot",
         variant: "destructive",
       })
     } finally {
@@ -184,6 +197,7 @@ export default function BotSettingsPage() {
       }
 
       const data = await response.json()
+      window.alert("Bot duplicated successfully!")
       toast({
         title: "Success",
         description: "Bot duplicated successfully",
@@ -191,6 +205,7 @@ export default function BotSettingsPage() {
       router.push(`/bots/${data.data._id}/settings`)
     } catch (error) {
       console.error("Error duplicating bot:", error)
+      window.alert("Failed to duplicate bot!")
       toast({
         title: "Error",
         description: "Failed to duplicate bot",
@@ -223,6 +238,8 @@ export default function BotSettingsPage() {
 
       const data = await response.json()
       setBot(data.data)
+      setShowPublicDialog(false)
+      window.alert(`Bot is now ${data.data.isPublic ? "public" : "private"}!`)
       toast({
         title: "Success",
         description: `Bot is now ${data.data.isPublic ? "public" : "private"}`,
@@ -261,6 +278,8 @@ export default function BotSettingsPage() {
 
       const data = await response.json()
       setBot(data.data)
+      setShowActiveDialog(false)
+      window.alert(`Bot is now ${data.data.isActive ? "active" : "inactive"}!`)
       toast({
         title: "Success",
         description: `Bot is now ${data.data.isActive ? "active" : "inactive"}`,
@@ -300,7 +319,7 @@ export default function BotSettingsPage() {
       setBot(data.data)
       setCategory(data.data.category || "Other")
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Category updated successfully",
       })
     } catch (error) {
@@ -404,12 +423,32 @@ export default function BotSettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               {isSavingPublic && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Switch
-                checked={bot.isPublic}
-                onCheckedChange={togglePublic}
-                disabled={bot.trainingStatus !== "completed" || isSavingPublic}
-                className={bot.isPublic ? "bg-green-500" : "bg-red-500"}
-              />
+              <Dialog open={showPublicDialog} onOpenChange={setShowPublicDialog}>
+                <DialogTrigger asChild>
+                  <Switch
+                    checked={bot.isPublic}
+                    onCheckedChange={() => setShowPublicDialog(true)}
+                    disabled={bot.trainingStatus !== "completed" || isSavingPublic}
+                    className={bot.isPublic ? "bg-green-500" : "bg-red-500"}
+                  />
+                </DialogTrigger>
+                <DialogContent className="bg-black text-white">
+                  <DialogHeader>
+                    <DialogTitle>Change Public Access</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to make this bot {bot.isPublic ? "private" : "public"}?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowPublicDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button className=" text-black" onClick={togglePublic}>
+                      Confirm
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -422,12 +461,32 @@ export default function BotSettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               {isSavingActive && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Switch
-                checked={bot.isActive}
-                onCheckedChange={toggleActive}
-                disabled={bot.trainingStatus !== "completed" || isSavingActive}
-                className={bot.isActive ? "bg-green-500" : "bg-red-500"}
-              />
+              <Dialog open={showActiveDialog} onOpenChange={setShowActiveDialog}>
+                <DialogTrigger asChild>
+                  <Switch
+                    checked={bot.isActive}
+                    onCheckedChange={() => setShowActiveDialog(true)}
+                    disabled={bot.trainingStatus !== "completed" || isSavingActive}
+                    className={bot.isActive ? "bg-green-500" : "bg-red-500"}
+                  />
+                </DialogTrigger>
+                <DialogContent className="bg-black text-white">
+                  <DialogHeader>
+                    <DialogTitle>Change Active Status</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to {bot.isActive ? "deactivate" : "activate"} this bot?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowActiveDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={toggleActive}>
+                      Confirm
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -441,12 +500,12 @@ export default function BotSettingsPage() {
           <div className="flex gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="text-white hover:text-white">
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate Bot
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-black text-white">
                 <DialogHeader>
                   <DialogTitle>Duplicate Bot</DialogTitle>
                   <DialogDescription>
@@ -460,12 +519,14 @@ export default function BotSettingsPage() {
                     value={duplicateBotName}
                     onChange={(e) => setDuplicateBotName(e.target.value)}
                     placeholder="Enter new bot name"
+                    className="text-white"
                   />
                 </div>
-                <DialogFooter>
+                <DialogFooter className="bg-black text-white">
                   <Button
                     onClick={handleDuplicate}
                     disabled={!duplicateBotName || isDuplicating}
+                    className="text-black hover:text-white"
                   >
                     {isDuplicating ? "Duplicating..." : "Duplicate"}
                   </Button>

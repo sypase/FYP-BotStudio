@@ -160,8 +160,11 @@ router.post("/finetunestatus", validate, async (req, res) => {
 });
 
 // Route to delete a bot
-router.delete("/delete/:id", validate, async (req, res) => {
+router.delete("/:id", validate, async (req, res) => {
   const { id } = req.params;
+
+  console.log("Deleting bot with ID:", id);
+  
 
   if (!id) {
     return res.status(400).json({
@@ -171,17 +174,24 @@ router.delete("/delete/:id", validate, async (req, res) => {
   }
 
   try {
-    const bot = await Bot.findOneAndDelete({
+    // First find the bot to ensure it exists and belongs to the user
+    const bot = await Bot.findOne({
       _id: id,
       owner: req.user._id,
     });
 
+    console.log(b);
+    
+
     if (!bot) {
       return res.status(404).json({
         success: false,
-        message: "Bot not found",
+        message: "Bot not found or you don't have permission to delete it",
       });
     }
+
+    // Delete the bot
+    await Bot.deleteOne({ _id: id });
 
     res.json({
       success: true,
