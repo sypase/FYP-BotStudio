@@ -8,6 +8,8 @@ const client = new BotStudioClient(API_KEY, BASE_URL);
 
 async function testClient() {
   try {
+    const specificBotId = '67f7e33095e62432d976e94d';
+    
     // Test 1: List all bots
     console.log('\n=== Testing: List all bots ===');
     const bots = await client.listBots();
@@ -21,21 +23,17 @@ async function testClient() {
       console.log(`  Total Interactions: ${bot.totalInteractions}`);
     });
 
-    if (bots.length > 0) {
-      const firstBot = bots[0];
+    // Test 2: Get bot details
+    console.log('\n=== Testing: Get bot details ===');
+    const botDetails = await client.getBot(specificBotId);
+    console.log('Bot details:', JSON.stringify(botDetails, null, 2));
 
-      // Test 2: Get bot details
-      console.log('\n=== Testing: Get bot details ===');
-      const botDetails = await client.getBot(firstBot._id);
-      console.log('Bot details:', JSON.stringify(botDetails, null, 2));
-
-      // Test 3: Interact with bot
-      console.log('\n=== Testing: Bot interaction ===');
-      const testMessage = 'Hello, bot! How are you today?';
-      console.log(`Sending message: "${testMessage}"`);
-      const response = await client.interactWithBot(firstBot._id, testMessage);
-      console.log('Bot response:', response);
-    }
+    // Test 3: Interact with bot
+    console.log('\n=== Testing: Bot interaction ===');
+    const testMessage = 'Hello, bot! How are you today?';
+    console.log(`Sending message: "${testMessage}"`);
+    const response = await client.interactWithBot(specificBotId, testMessage);
+    console.log('Bot response:', response);
 
     // Test 4: Get credit balance
     console.log('\n=== Testing: Get credit balance ===');
@@ -97,4 +95,4 @@ testBotInteraction().catch((error: unknown) => {
     console.error('Test failed with unknown error:', error);
   }
   process.exit(1);
-}); 
+});
