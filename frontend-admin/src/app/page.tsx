@@ -45,10 +45,16 @@ export default function AdminPanel() {
         password,
       });
       
-      toast.success("Logged In Successfully!");
       localStorage.setItem("token", response.data.token);
       setIsLoggedIn(true);
-      router.push("/admin/dashboard");
+      
+      toast.success("Logged In Successfully!");
+      
+      // Redirect after 5 seconds
+      setTimeout(() => {
+        router.push("/admin/dashboard");
+      }, 5000);
+
     } catch (error: any) {
       const errorMessage = error.response?.data || "An error occurred during login";
       toast.error(errorMessage);

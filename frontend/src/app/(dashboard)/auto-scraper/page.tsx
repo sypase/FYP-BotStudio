@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { TrashIcon, PlayIcon, DownloadIcon } from "lucide-react";
+import { toast } from "sonner";
 
 interface ScraperSchedule {
   _id: string;
@@ -149,6 +150,8 @@ export default function AutoScraperPage() {
       // Reset time to current time
       const now = new Date();
       setSelectedTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+
+      toast.success("Schedule created successfully");
     } catch (error) {
       console.error("Failed to create schedule", error);
       if (axios.isAxiosError(error)) {
@@ -181,6 +184,8 @@ export default function AutoScraperPage() {
       setSchedules(schedules.map(s => 
         s._id === id ? { ...s, isActive: !s.isActive } : s
       ));
+
+      toast.success(`Schedule ${!schedule.isActive ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
       console.error("Failed to toggle schedule", error);
     }
@@ -203,6 +208,8 @@ export default function AutoScraperPage() {
         setSelectedSchedule(null);
         setScrapes([]);
       }
+
+      toast.success("Schedule deleted successfully");
     } catch (error) {
       console.error("Failed to delete schedule", error);
     }
@@ -227,6 +234,8 @@ export default function AutoScraperPage() {
 
       // Refresh the schedule details
       await fetchScheduleDetails(id);
+      
+      toast.success("Scraping executed successfully");
     } catch (error) {
       console.error("Failed to execute scraping", error);
       if (axios.isAxiosError(error)) {

@@ -49,7 +49,7 @@ export default function PaymentSuccess() {
         setTimeout(() => {
           router.push('/dashboard');
         }, 3000);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Payment verification error:', error);
         setErrorMessage(error.message || 'Failed to verify payment. Please contact support if this persists.');
         toast.error(error.message || 'Failed to verify payment');
