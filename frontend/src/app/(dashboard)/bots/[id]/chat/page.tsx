@@ -508,7 +508,7 @@ export default function BotChatPage() {
                   : "Type your message..."
               }
               disabled={!botInfo?.isActive || botInfo?.trainingStatus !== "completed"}
-              className="w-full resize-none rounded-md border dark:border-gray-800 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-black"
+              className="w-full resize-none rounded-md border text-white dark:border-gray-800 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-black"
               rows={1}
             />
           </div>

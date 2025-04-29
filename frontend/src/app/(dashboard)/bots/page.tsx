@@ -414,6 +414,7 @@ function BotCard({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const getStatusBadge = () => {
     switch (bot.trainingStatus) {
@@ -467,6 +468,40 @@ function BotCard({
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleCheckStatus = async () => {
+    try {
+      setIsRefreshing(true)
+      const response = await fetch(`${serverURL}/bot/finetunestatus`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          botId: bot._id
+        })
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        toast({
+          title: "Status Updated",
+          description: `Training status: ${data.data.status}`
+        })
+      } else {
+        throw new Error(data.message || "Failed to check status")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -555,10 +590,10 @@ function BotCard({
           <Button
             variant="outline"
             className="flex-1 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
-            onClick={() => onCheckStatus(bot._id)}
-            disabled={refreshLoading}
+            onClick={handleCheckStatus}
+            disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Check Status
           </Button>
         )}
